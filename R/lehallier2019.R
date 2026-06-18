@@ -139,11 +139,15 @@ compute_lehallier2019_age <- function(data,
     prot_age[i] <- pred
   }
 
+  # Age acceleration = residuals of proteomic_age ~ chronological_age
+  fit <- stats::lm(prot_age ~ chron_age)
+  age_accel <- as.numeric(stats::residuals(fit))
+
   data.frame(
     id = ids,
     chronological_age = chron_age,
     proteomic_age = prot_age,
-    age_acceleration = prot_age - chron_age,
+    age_acceleration = age_accel,
     n_proteins_matched = sum(present),
     n_proteins_missing = length(missing),
     stringsAsFactors = FALSE

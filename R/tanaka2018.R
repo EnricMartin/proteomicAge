@@ -44,7 +44,8 @@ tanaka2018_proteins <- function() {
 #'
 #' Applies the 76-protein elastic net model to SOMAscan proteomic data
 #' to compute predicted biological age (PROage) and age acceleration
-#' (PROaccel = residuals of predicted age on chronological age).
+#' (PROaccel = residuals of predicted age on chronological age, per
+#' Tanaka et al. 2020 eLife).
 #'
 #' The input data should be SOMAscan RFU values. The function will
 #' log2-transform the values internally (matching the original paper's
@@ -175,13 +176,15 @@ compute_tanaka2018_age <- function(data,
     }
   }
 
-  age_accel <- prot_age - chron_age
+  # Age acceleration = residuals of proteomic_age ~ chronological_age
+  fit <- stats::lm(prot_age ~ chron_age)
+  age_accel <- stats::residuals(fit)
 
   result <- data.frame(
     id                = ids,
     chronological_age = chron_age,
     proteomic_age     = prot_age,
-    age_acceleration  = age_accel,
+    age_acceleration  = as.numeric(age_accel),
     n_proteins_matched = length(required_somaids) - length(missing),
     n_proteins_missing = length(missing),
     stringsAsFactors   = FALSE
