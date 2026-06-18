@@ -54,6 +54,10 @@ lehallier2019_proteins <- function() {
 #' @param age_col Name of the chronological age column.
 #' @param sex_col Name of the sex column.
 #' @param male_value Value coding for male in sex column (default 0).
+#' @param protein_format Format of protein column names.
+#'   \code{"auto"} (default) auto-detects; \code{"gene"} for gene symbols;
+#'   \code{"seqid_dot"} for dot-format SeqIds; \code{"seqid_sl"} for SL format.
+#'   Columns are internally normalized to Gene.SeqId format.
 #'
 #' @return A data.frame with predicted proteomic age and age acceleration.
 #' @export
@@ -61,7 +65,19 @@ compute_lehallier2019_age <- function(data,
                                        id_col = "SampleID",
                                        age_col = "Age",
                                        sex_col = "Sex",
-                                       male_value = 0) {
+                                       male_value = 0,
+                                       protein_format = c("auto", "gene",
+                                                          "seqid_dot", "seqid_sl",
+                                                          "seqid_full")) {
+
+  protein_format <- match.arg(protein_format)
+
+  # Normalize protein names to seqid_full format
+  data <- normalize_protein_names(data,
+    id_col = id_col, age_col = age_col,
+    target_format = "seqid_full",
+    input_format = protein_format
+  )
 
   if (!is.data.frame(data)) stop("'data' must be a data.frame")
   if (!id_col %in% names(data)) stop("id_col not found")

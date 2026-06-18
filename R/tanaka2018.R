@@ -62,6 +62,11 @@ tanaka2018_proteins <- function() {
 #' @param log_transform Logical. If TRUE (default), log2-transform
 #'   protein values before computing. Set to FALSE if data is already
 #'   log-transformed.
+#' @param protein_format Format of protein column names in the data.
+#'   \code{"auto"} (default) auto-detects; \code{"gene"} for gene symbols;
+#'   \code{"seqid_dot"} for dot-format SeqIds (e.g. 4374.45.2);
+#'   \code{"seqid_sl"} for SL-format SeqIds (e.g. SL003869).
+#'   Columns are internally normalized to SL format for the Tanaka clock.
 #'
 #' @return A data.frame with columns:
 #'   \itemize{
@@ -89,7 +94,18 @@ tanaka2018_proteins <- function() {
 compute_tanaka2018_age <- function(data,
                                     id_col = "SampleID",
                                     age_col = "Age",
-                                    log_transform = TRUE) {
+                                    log_transform = TRUE,
+                                    protein_format = c("auto", "gene",
+                                                       "seqid_dot", "seqid_sl")) {
+
+  protein_format <- match.arg(protein_format)
+
+  # --- Normalize protein names to SL format ---
+  data <- normalize_protein_names(data,
+    id_col = id_col, age_col = age_col,
+    target_format = "seqid_sl",
+    input_format = protein_format
+  )
   # --- Validate input ---
   if (!is.data.frame(data)) {
     stop("'data' must be a data.frame")
