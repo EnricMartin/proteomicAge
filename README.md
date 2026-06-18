@@ -22,6 +22,11 @@ For full protein name mapping (recommended):
 BiocManager::install("SomaScan.db")
 ```
 
+After installation, view the complete manual:
+```r
+vignette("proteomicAge")
+```
+
 ## Quick Start
 
 ```r

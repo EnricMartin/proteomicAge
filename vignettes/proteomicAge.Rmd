@@ -1,0 +1,394 @@
+---
+title: "proteomicAge: User Manual & Complete Pipeline"
+author: "ClawBio"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{User Manual & Pipeline}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+library(proteomicAge)
+```
+
+# Overview
+
+`proteomicAge` computes biological age from plasma proteomic data using
+published proteomic aging clocks. This vignette covers every function in the
+package and demonstrates a complete analysis pipeline from raw SOMAscan data
+to a finished report.
+
+# Installation
+
+```r
+remotes::install_github("ClawBio/ClawBio", subdir = "proteomicAge")
+
+# Recommended: install SomaScan.db for full protein name mapping
+BiocManager::install("SomaScan.db")
+```
+
+# Function Reference
+
+## Clock Functions
+
+### `tanaka2018_proteins()` / `lehallier2019_proteins()`
+
+List the proteins (and their coefficients) used in each clock.
+
+```{r}
+prots <- tanaka2018_proteins()
+head(prots[, c("SOMAID", "Gene", "Weight")], 10)
+```
+
+```{r}
+lh <- lehallier2019_proteins()
+cat("Lehallier 2019 proteins:", nrow(lh), "\n")
+head(lh[, c("SOMAID", "Gene", "Weight")], 10)
+```
+
+### `compute_tanaka2018_age()`
+
+Compute proteomic biological age using the Tanaka et al. (2018) 76-protein clock.
+
+```{r}
+# Create demo data with gene symbols
+demo <- data.frame(
+  SampleID = paste0("S", 1:5),
+  Age      = c(30, 45, 55, 65, 80)
+)
+
+# Add a few known proteins
+demo[["GDF15"]]   <- c(1500, 3000, 5000, 8000, 15000)
+demo[["CHI3L1"]]  <- c(1200, 1800, 2500, 4000, 6000)
+demo[["SOST"]]    <- c(800,  1200, 2000, 3500, 5000)
+demo[["PTN"]]     <- c(900,  1500, 2200, 3800, 5500)
+demo[["ADAMTS5"]] <- c(1000, 2000, 3000, 4500, 7000)
+
+# Compute — uses SomaScan.db to auto-map gene → SeqId
+result <- compute_tanaka2018_age(demo, protein_format = "gene")
+print(result)
+```
+
+**Parameters:**
+
+| Parameter | Default | Description |
+|---|---|---|
+| `data` | (required) | Data frame with sample ID, age, and protein columns |
+| `id_col` | `"SampleID"` | Name of sample identifier column |
+| `age_col` | `"Age"` | Name of chronological age column |
+| `log_transform` | `TRUE` | Apply log₂ transform (match paper's preprocessing) |
+| `protein_format` | `"auto"` | Format of protein columns: `"gene"`, `"uniprot"`, `"seqid_dot"`, `"seqid_sl"`, `"auto"` |
+
+### `compute_lehallier2019_age()`
+
+Compute proteomic age using the Lehallier et al. (2019) 373-protein LASSO clock.
+
+```{r}
+# Input can use gene symbols, uniProt, or SeqIds
+demo_lh <- data.frame(
+  SampleID = paste0("S", 1:3),
+  Age = c(35, 55, 75)
+)
+demo_lh[["GDF15"]]  <- c(2000, 5000, 12000)
+demo_lh[["SCARF2"]] <- c(800, 1500, 3000)
+demo_lh[["SOST"]]   <- c(1000, 2500, 4500)
+
+result_lh <- compute_lehallier2019_age(demo_lh, protein_format = "gene")
+print(result_lh)
+```
+
+**Additional parameters (vs Tanaka clock):**
+
+| Parameter | Default | Description |
+|---|---|---|
+| `sex_col` | `"Sex"` | Sex column name (0 = male, 1 = female) |
+| `male_value` | `0` | Value coding for male |
+
+**Key differences from Tanaka clock:**
+
+| | Tanaka 2018 | Lehallier 2019 |
+|---|---|---|
+| Log transform | log₂ | log₁₀ |
+| Scaling | None | Z-scaling (approximate) |
+| Covariates | None | Sex |
+| Intercept | 90.22 | 50.83 |
+
+---
+
+## Protein Name Mapping
+
+### `normalize_protein_names()`
+
+Normalize protein column names from any format to a target format.
+This is called automatically by the clock functions, but you can use it
+standalone.
+
+```{r}
+data <- data.frame(
+  SampleID = "S1",
+  Age = 50,
+  GDF15 = 5000,
+  CHI3L1 = 3000,
+  `4374.45.2` = 2000
+)
+
+# Convert gene symbols → Tanaka SL format
+data_sl <- normalize_protein_names(data, target_format = "seqid_sl", input_format = "gene")
+names(data_sl)
+
+# Convert gene symbols → Lehallier format
+data_full <- normalize_protein_names(data, target_format = "seqid_full", input_format = "gene")
+names(data_full)
+```
+
+### `detect_column_format()`
+
+Auto-detect the format of protein column names.
+
+```{r}
+detect_column_format(c("GDF15", "CHI3L1", "SOST"))        # gene
+detect_column_format(c("4374.45.2", "11104.13.3"))         # seqid_dot
+detect_column_format(c("SL003869", "SL003340"))            # seqid_sl
+detect_column_format(c("GDF15.4374.45.2", "SCARF2.8956.96.3"))  # seqid_full
+```
+
+---
+
+## Preprocessing
+
+### `preprocess_somascan()`
+
+Preprocess raw SOMAscan RFU data before clock computation.
+
+```{r}
+raw <- data.frame(
+  SampleID = 1:100,
+  SL003869 = c(rnorm(98, mean = 8, sd = 1), 20, -5),  # two outliers
+  SL003340 = rnorm(100, mean = 7, sd = 1.5)
+)
+
+processed <- preprocess_somascan(raw, 
+  log_transform = TRUE,
+  handle_outliers = TRUE,
+  report_missingness = TRUE
+)
+```
+
+**Parameters:**
+
+| Parameter | Default | Description |
+|---|---|---|
+| `data` | (required) | Data frame with protein columns |
+| `protein_cols` | `NULL` | Which columns are proteins (auto-detect by default) |
+| `log_transform` | `TRUE` | Apply log₂ transformation |
+| `handle_outliers` | `TRUE` | Winsorize at ±4 SD |
+| `report_missingness` | `TRUE` | Print missing value summary |
+
+### `validate_somascan_input()`
+
+Check data quality before running a clock.
+
+```{r}
+validate_somascan_input(demo)  # from earlier example
+```
+
+---
+
+# Complete Pipeline
+
+This section walks through a complete analysis: raw SOMAscan data → clean
+data → proteomic age → report.
+
+## Step 1: Load Raw Data
+
+```{r}
+# Simulate a realistic SOMAscan dataset (samples × proteins in RFU)
+set.seed(123)
+n_samples <- 50
+prots <- tanaka2018_proteins()
+
+raw_data <- data.frame(
+  SampleID = paste0("P", sprintf("%03d", 1:n_samples)),
+  Age = round(runif(n_samples, 25, 85), 1),
+  Sex = sample(c(0, 1), n_samples, replace = TRUE)
+)
+
+for (i in 1:nrow(prots)) {
+  raw_data[[prots$SOMAID[i]]] <- 
+    rlnorm(n_samples, meanlog = log(2000), sdlog = 0.5)
+}
+
+cat("Loaded:", nrow(raw_data), "samples ×", ncol(raw_data), "columns\n")
+```
+
+## Step 2: Validate Input
+
+```{r}
+validate_somascan_input(raw_data)
+```
+
+## Step 3: Preprocess
+
+```{r}
+clean_data <- preprocess_somascan(raw_data, report_missingness = FALSE)
+cat("Preprocessed. Any outliers winsorized, log₂ applied.\n")
+```
+
+## Step 4: Compute Proteomic Age
+
+Apply both clocks to compare results.
+
+```{r}
+# Tanaka 2018 clock (note: data already log-transformed)
+tanaka_age <- compute_tanaka2018_age(clean_data, log_transform = FALSE)
+tanaka_age$Age <- clean_data$Age
+
+# Lehallier 2019 clock (on gene-symbol version of the same data)
+gene_data <- raw_data
+names(gene_data) <- c("SampleID", "Age", "Sex", prots$Gene)
+leh_age <- compute_lehallier2019_age(gene_data, protein_format = "gene")
+leh_age$Age <- gene_data$Age
+
+cat("Done. Computed proteomic age for", nrow(tanaka_age), "samples.\n")
+```
+
+## Step 5: Analyze Results
+
+```{r}
+# Correlation with chronological age
+cor_tanaka <- cor(tanaka_age$Age, tanaka_age$proteomic_age, use = "complete.obs")
+cor_leh    <- cor(leh_age$Age, leh_age$proteomic_age, use = "complete.obs")
+
+cat("Tanaka  correlation (predicted vs chronological):", round(cor_tanaka, 3), "\n")
+cat("Lehallier correlation (predicted vs chronological):", round(cor_leh, 3), "\n")
+
+# Age acceleration summary
+cat("\nTanaka age acceleration:\n")
+cat("  Mean:", round(mean(tanaka_age$age_acceleration, na.rm = TRUE), 4), "(≈ 0)\n")
+cat("  SD:  ", round(sd(tanaka_age$age_acceleration, na.rm = TRUE), 2), "\n")
+cat("  Range:", round(range(tanaka_age$age_acceleration, na.rm = TRUE), 2), "\n")
+
+# Top age-accelerated individuals
+tanaka_age <- tanaka_age[order(-tanaka_age$age_acceleration), ]
+cat("\nTop 3 age-accelerated:\n")
+print(head(tanaka_age[, c("id", "Age", "proteomic_age", "age_acceleration")], 3))
+
+cat("\nTop 3 age-decelerated:\n")
+print(tail(tanaka_age[, c("id", "Age", "proteomic_age", "age_acceleration")], 3))
+```
+
+## Step 6: Visualize
+
+```{r, fig.width=10, fig.height=5}
+par(mfrow = c(1, 2))
+
+# Tanaka: predicted vs chronological
+plot(tanaka_age$Age, tanaka_age$proteomic_age,
+     main = "Tanaka 2018 Clock",
+     xlab = "Chronological Age (years)",
+     ylab = "Predicted Proteomic Age (years)",
+     pch = 19, col = rgb(0.2, 0.4, 0.6, 0.5))
+abline(0, 1, lty = 2, col = "red")
+abline(lm(proteomic_age ~ Age, data = tanaka_age), col = "blue", lwd = 2)
+
+# Distribution of age acceleration
+hist(tanaka_age$age_acceleration, breaks = 20,
+     main = "Age Acceleration Distribution",
+     xlab = "PROaccel (years)",
+     col = "steelblue", border = "white")
+abline(v = 0, col = "red", lwd = 2)
+```
+
+## Step 7: Compare Clocks
+
+```{r, fig.width=8, fig.height=6}
+# Merge by age
+merged <- merge(tanaka_age[, c("id", "Age", "proteomic_age")],
+                leh_age[, c("id", "Age", "proteomic_age")],
+                by = "id", suffixes = c("_tanaka", "_leh"))
+
+plot(merged$proteomic_age_tanaka, merged$proteomic_age_leh,
+     main = "Clock Comparison",
+     xlab = "Tanaka 2018 Proteomic Age",
+     ylab = "Lehallier 2019 Proteomic Age",
+     pch = 19, col = rgb(0.6, 0.2, 0.4, 0.5))
+abline(0, 1, lty = 2, col = "gray50")
+cor_clocks <- cor(merged$proteomic_age_tanaka, merged$proteomic_age_leh,
+                  use = "complete.obs")
+legend("topleft", legend = paste("r =", round(cor_clocks, 3)), bty = "n")
+```
+
+---
+
+# Protein Name Mapping: Deep Dive
+
+## When to use which format
+
+| Your data format | Use `protein_format =` | Notes |
+|---|---|---|
+| Gene symbols (`GDF15`) | `"gene"` | SomaScan.db maps to SeqId via ALIAS |
+| UniProt IDs (`Q99988`) | `"uniprot"` | SomaScan.db required |
+| Dot SeqIds (`4374.45.2`) | `"seqid_dot"` | Converts to PROBEID then maps |
+| SL SeqIds (`SL003869`) | `"seqid_sl"` | Only via built-in CSV (v3 platform) |
+| Full SeqIds (`GDF15.4374.45.2`) | `"seqid_full"` | Direct match |
+| Not sure | `"auto"` | Auto-detection |
+
+## Cross-clock compatibility
+
+The same input data (with gene symbols) can be used with both clocks:
+
+```{r}
+data <- data.frame(
+  SampleID = "S1",
+  Age = 50,
+  GDF15  = 5000,
+  CHI3L1 = 3000,
+  SOST   = 2000,
+  PTN    = 4000
+)
+
+tanaka_result <- compute_tanaka2018_age(data, protein_format = "gene")
+leh_result    <- compute_lehallier2019_age(data, protein_format = "gene")
+
+# Both clocks accept the exact same input format
+cat("Tanaka: ", tanaka_result$proteomic_age, "\n")
+cat("Lehallier:", leh_result$proteomic_age, "\n")
+```
+
+---
+
+# Understanding the Output
+
+## Age Acceleration
+
+Age acceleration = residuals of `lm(PROage ~ chronological_age)`.
+
+- **≈ 0**: Biological age matches chronological age for the population average
+- **> 0**: Predicted older than expected (accelerated aging)
+- **< 0**: Predicted younger than expected (decelerated aging)
+
+This is NOT simply `PROage - Age`. Using residuals accounts for the
+systematic relationship between predicted and chronological age.
+
+## When proteins are missing
+
+The `n_proteins_matched` and `n_proteins_missing` columns show coverage.
+Results with many missing proteins should be interpreted cautiously:
+
+```{r}
+if (any(tanaka_age$n_proteins_missing > 0)) {
+  cat("Some samples are missing proteins.\n")
+  cat("Consider the SomaScan panel version compatibility.\n")
+}
+```
+
+---
+
+# Session Info
+
+```{r}
+sessionInfo()
+```
