@@ -9,7 +9,7 @@
 # Supported input formats:
 #   "gene"       - Gene symbols (e.g., "GDF15")
 #   "uniprot"    - UniProt accessions (e.g., "Q99988")
-#   "seqid_dot"  - Dot-format SeqIds (e.g., "4374.45.2")
+#   "seqid_dot"  - Dot-format SeqIds (e.g., "seq.4374.45.2" or "4374.45.2")
 #   "seqid_sl"   - SL-format SeqIds (e.g., "SL003869") - only via built-in
 #   "seqid_full" - Gene.SeqId format (e.g., "GDF15.4374.45.2")
 
@@ -45,7 +45,10 @@ load_protein_mapping <- function() {
 # ---------- Format converters ----------
 
 dot_to_probeid <- function(dot_seqid) {
-  parts <- strsplit(as.character(dot_seqid), "[.]")[[1]]
+  # Strip "seq." prefix if present (e.g., "seq.4374.45.2" -> "4374.45.2")
+  x <- as.character(dot_seqid)
+  x <- sub("^seq[.]", "", x, ignore.case = TRUE)
+  parts <- strsplit(x, "[.]")[[1]]
   if (length(parts) >= 3) {
     nums <- utils::tail(parts, 3)
     paste0(nums[1], "-", nums[2], "_", nums[3])
@@ -247,7 +250,12 @@ normalize_protein_names <- function(data,
       if (!is.na(probeid)) {
         probeid_dot <- probeid_to_dot(probeid)
       } else if (input_format %in% c("seqid_dot", "seqid_full")) {
-        probeid_dot <- if (input_format == "seqid_full") extract_dot_from_full(protein_cols[i]) else protein_cols[i]
+        if (input_format == "seqid_full") {
+          probeid_dot <- extract_dot_from_full(protein_cols[i])
+        } else {
+          # Strip seq. prefix: "seq.4374.45.2" -> "4374.45.2"
+          probeid_dot <- sub("^seq[.]", "", protein_cols[i], ignore.case = TRUE)
+        }
       }
 
       if (!is.na(gene) && !is.na(probeid_dot) && gene != "" && probeid_dot != "") {
@@ -287,7 +295,7 @@ detect_column_format <- function(colnames_vec) {
   mp <- .mapping_state$protein_mapping
 
   n_sl    <- sum(colnames_vec %in% mp$seqid_sl, na.rm = TRUE)
-  n_dot   <- sum(grepl("^[0-9]+[.][0-9]+[.][0-9]+$", colnames_vec))
+  n_dot   <- sum(grepl("^(seq[.])?[0-9]+[.][0-9]+[.][0-9]+$", colnames_vec, ignore.case = TRUE))
   n_full  <- sum(grepl("^[A-Za-z0-9]+[.][0-9]+[.][0-9]+[.][0-9]+$", colnames_vec))
   n_gene  <- sum(colnames_vec %in% mp$gene_tanaka, na.rm = TRUE) +
              sum(colnames_vec %in% mp$gene_lehallier, na.rm = TRUE)
