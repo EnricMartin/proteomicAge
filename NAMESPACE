@@ -2,5 +2,9 @@
 
 export(compute_tanaka2018_age)
 export(tanaka2018_proteins)
+export(compute_lehallier2019_age)
+export(lehallier2019_proteins)
+export(compute_lehallier2020_age)
+export(lehallier2020_proteins)
 export(preprocess_somascan)
 export(validate_somascan_input)

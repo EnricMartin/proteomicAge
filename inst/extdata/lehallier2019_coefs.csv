@@ -1,0 +1,8 @@
+SOMAID,Gene,Weight
+# PLACEHOLDER: Download Supplementary Table 7 from Lehallier et al. (2019) Nature Medicine
+# URL: https://pmc.ncbi.nlm.nih.gov/articles/PMC7062043/
+# The 373-protein LASSO clock (alpha=1, lambda.min, 10-fold CV)
+# Also contains the 9-protein reduced model
+# Format: SOMAID (SeqId), Gene symbol, LASSO coefficient
+# Input preprocessing: Z-scale log10 RFU values, include sex as covariate
+# Intercept value: add row with SOMAID=(Intercept), Weight=<intercept_value>
