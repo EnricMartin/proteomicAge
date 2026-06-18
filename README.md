@@ -10,11 +10,11 @@ data never leaves your machine.**
 |-------|----------|----------|--------|---|-----------|
 | **Tanaka 2018** | 76 | SOMAscan 1.3K | Elastic Net | 0.94 | [Tanaka et al. (2018) Aging Cell](https://doi.org/10.1111/acel.12799) |
 | **Lehallier 2019** | 373 | SOMAscan 2.9K | LASSO | 0.93-0.97 | [Lehallier et al. (2019) Nature Medicine](https://doi.org/10.1038/s41591-019-0673-2) |
-| **Lehallier 2020** | 491 | SOMAscan 2.9K | LASSO | 0.98 | [Lehallier et al. (2020) Aging Cell](https://doi.org/10.1111/acel.13256) |
 
 ### Planned Clocks
 
 - ProtAge / ProtAge20 (Nature Medicine 2024, Olink)
+- Lehallier 2020 (491 proteins, SOMAscan)
 - Sathyan 2020 (162 proteins, SOMAscan)
 
 ## Installation
