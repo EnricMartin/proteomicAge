@@ -1,0 +1,31 @@
+Package: proteomicAge
+Type: Package
+Title: Proteomic Aging Clocks
+Version: 0.1.0
+Date: 2026-06-18
+Authors@R: c(
+    person("Xiaohan", role = c("aut", "cre"), email = "xiaohan@clawbio.org")
+  )
+Description: Compute biological age from plasma proteomic data using
+    published proteomic aging clocks. Currently implements the Tanaka
+    et al. (2018) 76-protein elastic net clock trained on SOMAscan
+    1.3K data. Additional clocks (Lehallier 2019, Lehallier 2020,
+    Sathyan 2020) will be added in future releases. All computation
+    is local — proteomic data never leaves the machine.
+License: MIT + file LICENSE
+URL: https://github.com/ClawBio/ClawBio
+BugReports: https://github.com/ClawBio/ClawBio/issues
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.3.0
+Depends:
+    R (>= 4.0)
+Imports:
+    stats,
+    utils
+Suggests:
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
+Config/testthat/edition: 3
