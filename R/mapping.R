@@ -1,81 +1,81 @@
-# Protein mapping: UniProt-based normalization using prolist.csv
+# Protein format detection and conversion using prolist.csv
 #
-# Architecture:
-#   prolist.csv (7,596 proteins) is the SOLE mapping source.
-#   Input protein columns MUST be UniProt accessions.
-#   Mapping flow: UniProt → prolist.csv → target SeqId format
+# Supported naming conventions:
+#   "gene"      - Entrez gene symbols (e.g., "GDF15", "CHI3L1")
+#   "seqid_sl"  - SL-format SeqIds (e.g., "SL003869")
+#   "seqid_dot" - Dot-format SeqIds (e.g., "seq.4374.45.2" or "4374.45.2")
+#   "uniprot"   - UniProt accessions (e.g., "P36222", "Q99988")
 
-.prolist <- NULL
-.prolist_lookup <- NULL
+.plist <- new.env(parent = emptyenv())
 
-load_prolist <- function() {
-  if (!is.null(.prolist)) return(invisible())
+load_plist <- function() {
+  if (!is.null(.plist$data)) return(invisible())
   path <- system.file("extdata", "prolist.csv",
                       package = "proteomicAge", mustWork = TRUE)
-  .prolist <<- utils::read.csv(path, stringsAsFactors = FALSE)
-  .prolist_lookup <<- split(.prolist, .prolist$UniProt)
+  .plist$data <- utils::read.csv(path, stringsAsFactors = FALSE)
   invisible()
 }
 
-# Map a UniProt accession to the clock's target SeqId
-map_uniprot_to_target <- function(uniprot, target_format) {
-  load_prolist()
-  col <- if (target_format == "seqid_sl") "seqid_sl" else "seqid_dot"
-  pl <- .prolist
-  idx <- which(pl$UniProt == uniprot)
-  if (length(idx) == 0) return(NA_character_)
-  sid <- pl[[col]][idx[1]]
-  if (target_format == "seqid_full") {
-    gene <- pl$EntrezGeneSymbol[idx[1]]
-    if (!is.na(gene) && gene != "" && !is.na(sid) && sid != "") {
-      return(paste0(gene, ".", sid))
-    }
-  }
-  sid
+#' Detect the naming convention of protein columns
+#'
+#' @param colnames_vec Character vector of column names
+#' @return One of "gene", "seqid_sl", "seqid_dot", "uniprot"
+#' @export
+detect_format <- function(colnames_vec) {
+  load_plist()
+  pl <- .plist$data
+  n_sl   <- sum(colnames_vec %in% pl$seqid_sl, na.rm = TRUE)
+  n_dot  <- sum(grepl("^(seq[.])?[0-9]+[.][0-9]+[.][0-9]+$", colnames_vec, ignore.case = TRUE))
+  n_full <- sum(grepl("^[A-Za-z0-9_]+[.][0-9]+[.][0-9]+[.][0-9]+$", colnames_vec))
+  n_gene <- sum(colnames_vec %in% pl$EntrezGeneSymbol, na.rm = TRUE)
+  n_up   <- sum(grepl("^[OPQ][0-9][A-Z0-9]{3}[0-9]$|^[A-NR-Z][0-9]([A-Z][A-Z0-9]{2}[0-9]){1,2}$", colnames_vec))
+  scores <- c(gene = n_gene, seqid_sl = n_sl, seqid_dot = n_dot + n_full, uniprot = n_up)
+  best <- which.max(scores)
+  if (scores[best] == 0) "gene" else names(scores)[best]
 }
 
-#' Normalize UniProt protein columns to a clock-specific SeqId format
+#' Convert protein column names between formats
 #'
-#' Columns named by UniProt accessions (e.g., "P36222") are mapped to
-#' the target clock's SeqId format using prolist.csv.
+#' Uses prolist.csv to map between gene symbols, SeqIds, and UniProt.
 #'
-#' @param data Data frame with UniProt-named protein columns
+#' @param data Data frame with protein columns
+#' @param target_format Target naming convention
 #' @param id_col, age_col Non-protein columns to preserve
-#' @param target_format Target format: "seqid_sl" (Tanaka) or "seqid_full" (Lehallier)
 #' @return Data frame with renamed protein columns
 #' @export
-normalize_protein_names <- function(data,
-                                     id_col = "SampleID",
-                                     age_col = "Age",
-                                     target_format = c("seqid_sl", "seqid_full")) {
+convert_format <- function(data,
+                            target_format = c("gene", "seqid_sl", "seqid_dot", "uniprot"),
+                            id_col = "SampleID",
+                            age_col = "Age") {
 
   target_format <- match.arg(target_format)
-  load_prolist()
+  load_plist()
+  pl <- .plist$data
 
-  skip_cols <- c(id_col, age_col, "Sex")
-  all_cols <- names(data)
-  protein_cols <- setdiff(all_cols, skip_cols)
+  skip <- c(id_col, age_col, "Sex")
+  prot_cols <- setdiff(names(data), skip)
 
-  if (length(protein_cols) == 0) {
-    stop("No protein columns found (excluding id, age, sex columns).")
-  }
-
-  col_to_use <- if (target_format == "seqid_sl") "seqid_sl" else "seqid_dot"
-  gene_col <- "EntrezGeneSymbol"
+  target_col <- switch(target_format,
+    gene      = "EntrezGeneSymbol",
+    seqid_sl  = "seqid_sl",
+    seqid_dot = "seqid_dot",
+    uniprot   = "UniProt"
+  )
 
   rename_map <- character()
-  for (col in protein_cols) {
-    idx <- which(.prolist$UniProt == col)
-    if (length(idx) > 0) {
-      sid <- .prolist[[col_to_use]][idx[1]]
-      if (target_format == "seqid_full" && !is.na(sid) && sid != "") {
-        gene <- .prolist[[gene_col]][idx[1]]
-        if (!is.na(gene) && gene != "") {
-          rename_map[col] <- paste0(gene, ".", sid)
-        }
-      } else if (!is.na(sid) && sid != "") {
-        rename_map[col] <- sid
-      }
+  for (col in prot_cols) {
+    new_name <- NA_character_
+    for (src in c("seqid_sl", "seqid_dot", "EntrezGeneSymbol", "UniProt")) {
+      idx <- which(pl[[src]] == col)
+      if (length(idx) > 0) { new_name <- pl[[target_col]][idx[1]]; break }
+    }
+    if (is.na(new_name)) {
+      stripped <- sub("^seq[.]", "", col, ignore.case = TRUE)
+      idx <- which(pl$seqid_dot2 == stripped)
+      if (length(idx) > 0) new_name <- pl[[target_col]][idx[1]]
+    }
+    if (!is.na(new_name) && new_name != "" && new_name != col) {
+      rename_map[col] <- new_name
     }
   }
 
@@ -83,8 +83,7 @@ normalize_protein_names <- function(data,
     for (old in names(rename_map)) {
       names(data)[names(data) == old] <- rename_map[old]
     }
-    message("Mapped ", length(rename_map), " UniProt columns to ", target_format)
+    message("Converted ", length(rename_map), " columns to ", target_format)
   }
-
   data
 }
