@@ -1,0 +1,175 @@
+---
+title: "proteomicAge: Manual & Pipeline"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Manual & Pipeline}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=TRUE, message=FALSE, warning=FALSE)
+library(proteomicAge)
+```
+
+# Overview
+
+`proteomicAge` computes biological age from SOMAscan proteomic data.
+Protein columns can use gene symbols, `seq.xxx.xx` SeqIds, `SLxxxxxx` SeqIds,
+or UniProt accessions. The package auto-detects the naming convention and maps
+it to the clock's internal format via `prolist.csv` (7,596 proteins).
+
+# Installation
+
+```r
+remotes::install_github("EnricMartin/proteomicAge")
+```
+
+# Input Format
+
+Your data.frame should contain:
+
+| Column | Required | Description |
+|--------|----------|-------------|
+| Sample ID | Yes | Unique sample identifier (any name) |
+| Age | Yes | Chronological age in years |
+| Sex | No | 0 = male, 1 = female (for Lehallier clock) |
+| Protein columns | Yes | Named using one of the supported conventions |
+
+**Supported protein naming:**
+
+| Convention | Example |
+|---|---|
+| Gene symbol | `GDF15`, `CHI3L1`, `SOST` |
+| SeqId dot | `seq.4374.45.2`, `11104.13.3` |
+| SeqId SL | `SL003869`, `SL003340` |
+| UniProt | `P36222`, `Q99988` |
+
+# Function Reference
+
+## `tanaka2018_proteins()` / `lehallier2019_proteins()`
+
+```{r}
+head(tanaka2018_proteins()[, c("Gene", "UniProt", "Weight")], 5)
+```
+
+## `detect_format()`
+
+Auto-detect column naming convention.
+
+```{r}
+detect_format(c("GDF15", "CHI3L1"))
+detect_format(c("P36222", "Q99988"))
+detect_format(c("SL003869"))
+detect_format(c("seq.4374.45.2"))
+```
+
+## `convert_format()`
+
+Convert between naming conventions.
+
+```{r}
+data <- data.frame(SampleID="S1", Age=50, GDF15=5000)
+convert_format(data, target_format="uniprot")
+```
+
+## `compute_tanaka2018_age()`
+
+76-protein elastic net clock. log₂ transform.
+
+```{r}
+data <- data.frame(
+  SampleID = paste0("S", 1:3),
+  Age = c(40, 60, 80),
+  GDF15  = c(2000, 5000, 12000),
+  CHI3L1 = c(1500, 3000, 6000),
+  SOST   = c(1000, 2500, 5000)
+)
+compute_tanaka2018_age(data, match_by = "gene")
+```
+
+**Parameters:**
+
+| Parameter | Default | Description |
+|---|---|---|
+| `data` | (required) | data.frame with protein columns + Age |
+| `id_col` | `"SampleID"` | ID column name |
+| `age_col` | `"Age"` | Age column name |
+| `log_transform` | `TRUE` | Apply log₂ transform |
+| `match_by` | `"uniprot"` | How to match: `"gene"`, `"uniprot"`, `"seqid_sl"`, `"seqid_dot"` |
+
+## `compute_lehallier2019_age()`
+
+373-protein LASSO clock. log₁₀ transform.
+
+```{r}
+compute_lehallier2019_age(data, match_by = "gene")
+```
+
+Additional parameters: `sex_col = "Sex"`, `male_value = 0`.
+
+## `preprocess_somascan()`
+
+```{r}
+raw <- data.frame(SampleID=1:5, GDF15=c(800,15000,300,2000,5000))
+preprocess_somascan(raw, report_missingness=FALSE)
+```
+
+# Complete Pipeline
+
+## Step 1: Load & Detect
+
+```{r}
+set.seed(123)
+prots <- tanaka2018_proteins()
+raw <- data.frame(SampleID=paste0("P",1:30), Age=round(runif(30,25,85),1))
+for(i in 1:nrow(prots))
+  raw[[prots$Gene[i]]] <- rlnorm(30, log(2000), 0.5)
+
+fmt <- detect_format(setdiff(names(raw), c("SampleID","Age")))
+cat("Detected format:", fmt, "\n")
+```
+
+## Step 2: Compute
+
+```{r}
+tanaka_age <- compute_tanaka2018_age(raw, match_by=fmt)
+leh_age <- compute_lehallier2019_age(raw, match_by=fmt)
+```
+
+## Step 3: Visualize
+
+```{r, fig.width=10, fig.height=5}
+par(mfrow=c(1,2))
+plot(tanaka_age$chronological_age, tanaka_age$proteomic_age,
+     main="Tanaka 2018", xlab="Chronological", ylab="Predicted", pch=19,
+     col=rgb(0.2,0.4,0.6,0.5))
+abline(0,1,lty=2,col="red")
+
+hist(tanaka_age$age_acceleration, breaks=20, main="Age Acceleration",
+     xlab="PROaccel", col="steelblue", border="white")
+abline(v=0,col="red",lwd=2)
+```
+
+# Understanding Output
+
+| Column | Description |
+|--------|-------------|
+| `proteomic_age` | Predicted biological age |
+| `age_acceleration` | Residuals of `lm(PROage ~ Age)`. Mean ≈ 0 |
+| `n_proteins_matched` | Clock proteins found |
+| `n_proteins_missing` | Clock proteins not found |
+| `match_by` | Naming convention used for matching |
+
+# Log Transform
+
+| Clock | Transform |
+|-------|-----------|
+| Tanaka 2018 | log₂ |
+| Lehallier 2019 | log₁₀ |
+
+# Session Info
+
+```{r}
+sessionInfo()
+```
