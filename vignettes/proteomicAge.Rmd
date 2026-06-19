@@ -19,6 +19,9 @@ Protein columns can use gene symbols, `seq.xxx.xx` SeqIds, `SLxxxxxx` SeqIds,
 or UniProt accessions. The package auto-detects the naming convention and maps
 it to the clock's internal format via `prolist.csv` (7,596 proteins).
 
+**Contributed by:** Han Xiao (hx624@ic.ac.uk), Esther Herrera, Arias Julian,
+Juan-Carlos Rivilla, Oliver Robinson.
+
 # Installation
 
 ```r
@@ -27,14 +30,12 @@ remotes::install_github("EnricMartin/proteomicAge")
 
 # Input Format
 
-Your data.frame should contain:
-
 | Column | Required | Description |
 |--------|----------|-------------|
-| Sample ID | Yes | Unique sample identifier (any name) |
+| Sample ID | Yes | Unique sample identifier |
 | Age | Yes | Chronological age in years |
-| Sex | No | 0 = male, 1 = female (for Lehallier clock) |
-| Protein columns | Yes | Named using one of the supported conventions |
+| Sex | No | 0 = male, 1 = female (Lehallier clock) |
+| Protein columns | Yes | Named using one of the conventions below |
 
 **Supported protein naming:**
 
@@ -45,17 +46,69 @@ Your data.frame should contain:
 | SeqId SL | `SL003869`, `SL003340` |
 | UniProt | `P36222`, `Q99988` |
 
-# Function Reference
+# Step-by-Step Usage
 
-## `tanaka2018_proteins()` / `lehallier2019_proteins()`
+## Step 1: Detect Format
 
 ```{r}
-head(tanaka2018_proteins()[, c("Gene", "UniProt", "Weight")], 5)
+protein_cols <- c("GDF15", "CHI3L1", "SOST", "PTN", "ADAMTS5",
+                  "MMP12", "EGFR", "IGFBP3", "CLU", "ALB")
+detect_format(protein_cols)
 ```
 
-## `detect_format()`
+## Step 2: Convert Format (Optional)
 
-Auto-detect column naming convention.
+```{r}
+data <- data.frame(
+  SampleID = paste0("P", 1:5),
+  Age = c(40, 55, 62, 71, 35),
+  Sex = c(0, 1, 0, 1, 0),
+  GDF15 = c(2000, 5000, 9000, 15000, 1800),
+  CHI3L1 = c(1500, 3000, 5500, 8000, 1200),
+  SOST = c(1000, 2500, 4500, 7000, 900),
+  PTN = c(1800, 2800, 5000, 8500, 1600),
+  ADAMTS5 = c(2200, 4000, 6500, 10000, 2000),
+  MMP12 = c(800, 2000, 3500, 5500, 700),
+  EGFR = c(3000, 4500, 4000, 6000, 2800),
+  IGFBP3 = c(5000, 3500, 2500, 1800, 5500),
+  CLU = c(12000, 15000, 18000, 20000, 10000),
+  ALB = c(35000, 38000, 32000, 30000, 40000)
+)
+
+# Convert gene symbols to UniProt accessions
+data_up <- convert_format(data, target_format = "uniprot",
+                          id_col = "SampleID", age_col = "Age")
+head(names(data_up))
+```
+
+## Step 3: Compute Proteomic Age
+
+```{r}
+# Tanaka 2018 — with explicit column name parameters
+result_tanaka <- compute_tanaka2018_age(
+  data,
+  id_col = "SampleID",
+  age_col = "Age",
+  match_by = "gene"
+)
+print(result_tanaka[, c("id", "chronological_age", "proteomic_age", "age_acceleration")])
+```
+
+```{r}
+# Lehallier 2019 — includes sex as covariate
+result_leh <- compute_lehallier2019_age(
+  data,
+  id_col = "SampleID",
+  age_col = "Age",
+  sex_col = "Sex",
+  match_by = "gene"
+)
+print(result_leh[, c("id", "chronological_age", "proteomic_age", "age_acceleration")])
+```
+
+# Function Reference
+
+## `detect_format()`
 
 ```{r}
 detect_format(c("GDF15", "CHI3L1"))
@@ -66,29 +119,15 @@ detect_format(c("seq.4374.45.2"))
 
 ## `convert_format()`
 
-Convert between naming conventions.
-
 ```{r}
-data <- data.frame(SampleID="S1", Age=50, GDF15=5000)
-convert_format(data, target_format="uniprot")
+demo <- data.frame(SampleID = "S1", Age = 50, GDF15 = 5000)
+convert_format(demo, target_format = "uniprot",
+               id_col = "SampleID", age_col = "Age")
 ```
 
 ## `compute_tanaka2018_age()`
 
 76-protein elastic net clock. log₂ transform.
-
-```{r}
-data <- data.frame(
-  SampleID = paste0("S", 1:3),
-  Age = c(40, 60, 80),
-  GDF15  = c(2000, 5000, 12000),
-  CHI3L1 = c(1500, 3000, 6000),
-  SOST   = c(1000, 2500, 5000)
-)
-compute_tanaka2018_age(data, match_by = "gene")
-```
-
-**Parameters:**
 
 | Parameter | Default | Description |
 |---|---|---|
@@ -96,23 +135,19 @@ compute_tanaka2018_age(data, match_by = "gene")
 | `id_col` | `"SampleID"` | ID column name |
 | `age_col` | `"Age"` | Age column name |
 | `log_transform` | `TRUE` | Apply log₂ transform |
-| `match_by` | `"uniprot"` | How to match: `"gene"`, `"uniprot"`, `"seqid_sl"`, `"seqid_dot"` |
+| `match_by` | `"uniprot"` | `"gene"`, `"uniprot"`, `"seqid_sl"`, `"seqid_dot"` |
 
 ## `compute_lehallier2019_age()`
 
 373-protein LASSO clock. log₁₀ transform.
-
-```{r}
-compute_lehallier2019_age(data, match_by = "gene")
-```
 
 Additional parameters: `sex_col = "Sex"`, `male_value = 0`.
 
 ## `preprocess_somascan()`
 
 ```{r}
-raw <- data.frame(SampleID=1:5, GDF15=c(800,15000,300,2000,5000))
-preprocess_somascan(raw, report_missingness=FALSE)
+raw <- data.frame(SampleID = 1:5, SL003869 = c(800, 15000, 300, 2000, 5000))
+preprocess_somascan(raw, protein_cols = "SL003869", report_missingness = FALSE)
 ```
 
 # Complete Pipeline
@@ -122,33 +157,44 @@ preprocess_somascan(raw, report_missingness=FALSE)
 ```{r}
 set.seed(123)
 prots <- tanaka2018_proteins()
-raw <- data.frame(SampleID=paste0("P",1:30), Age=round(runif(30,25,85),1))
-for(i in 1:nrow(prots))
-  raw[[prots$Gene[i]]] <- rlnorm(30, log(2000), 0.5)
+# Use first 20 proteins for demo
+demo_prots <- prots[1:20, ]
+raw <- data.frame(
+  SampleID = paste0("P", 1:30),
+  Age = round(runif(30, 25, 85), 1),
+  Sex = sample(c(0, 1), 30, replace = TRUE)
+)
+for (i in 1:nrow(demo_prots)) {
+  raw[[demo_prots$Gene[i]]] <- rlnorm(30, log(2000), 0.5)
+}
 
-fmt <- detect_format(setdiff(names(raw), c("SampleID","Age")))
+fmt <- detect_format(setdiff(names(raw), c("SampleID", "Age", "Sex")))
 cat("Detected format:", fmt, "\n")
 ```
 
 ## Step 2: Compute
 
 ```{r}
-tanaka_age <- compute_tanaka2018_age(raw, match_by=fmt)
-leh_age <- compute_lehallier2019_age(raw, match_by=fmt)
+tanaka_age <- compute_tanaka2018_age(raw, id_col = "SampleID", age_col = "Age",
+                                      match_by = fmt)
+leh_age <- compute_lehallier2019_age(raw, id_col = "SampleID", age_col = "Age",
+                                      sex_col = "Sex", match_by = fmt)
 ```
 
 ## Step 3: Visualize
 
 ```{r, fig.width=10, fig.height=5}
-par(mfrow=c(1,2))
+par(mfrow = c(1, 2))
 plot(tanaka_age$chronological_age, tanaka_age$proteomic_age,
-     main="Tanaka 2018", xlab="Chronological", ylab="Predicted", pch=19,
-     col=rgb(0.2,0.4,0.6,0.5))
-abline(0,1,lty=2,col="red")
+     main = "Tanaka 2018", xlab = "Chronological", ylab = "Predicted",
+     pch = 19, col = rgb(0.2, 0.4, 0.6, 0.5))
+abline(0, 1, lty = 2, col = "red")
+r <- cor(tanaka_age$chronological_age, tanaka_age$proteomic_age, use = "complete")
+legend("topleft", legend = paste("r =", round(r, 3)), bty = "n")
 
-hist(tanaka_age$age_acceleration, breaks=20, main="Age Acceleration",
-     xlab="PROaccel", col="steelblue", border="white")
-abline(v=0,col="red",lwd=2)
+hist(tanaka_age$age_acceleration, breaks = 20, main = "Age Acceleration",
+     xlab = "PROaccel", col = "steelblue", border = "white")
+abline(v = 0, col = "red", lwd = 2)
 ```
 
 # Understanding Output
@@ -159,7 +205,7 @@ abline(v=0,col="red",lwd=2)
 | `age_acceleration` | Residuals of `lm(PROage ~ Age)`. Mean ≈ 0 |
 | `n_proteins_matched` | Clock proteins found |
 | `n_proteins_missing` | Clock proteins not found |
-| `match_by` | Naming convention used for matching |
+| `match_by` | Naming convention used |
 
 # Log Transform
 
@@ -167,8 +213,6 @@ abline(v=0,col="red",lwd=2)
 |-------|-----------|
 | Tanaka 2018 | log₂ |
 | Lehallier 2019 | log₁₀ |
-
-# Session Info
 
 ```{r}
 sessionInfo()

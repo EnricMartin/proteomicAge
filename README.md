@@ -3,6 +3,9 @@
 Compute biological age from plasma proteomic data using published proteomic
 aging clocks.
 
+**Contributed by:** Han Xiao (hx624@ic.ac.uk), Esther Herrera, Arias Julian,
+Juan-Carlos Rivilla, Oliver Robinson.
+
 ## Installation
 
 ```r
@@ -39,25 +42,70 @@ The input data.frame must contain the following columns:
 Column naming is detected automatically or can be specified explicitly via
 the `match_by` parameter.
 
-## Quick Start
+## Usage
+
+### Step 1: Detect protein naming format
 
 ```r
 library(proteomicAge)
 
-# Input with any supported protein naming
-data <- data.frame(
-  SampleID = "S1",
-  Age = 50,
-  CHI3L1 = 3000,
-  GDF15  = 5000,
-  SOST   = 2000
+# Your data — protein columns in any supported convention
+data <- read.csv("my_somascan_data.csv")
+
+# Auto-detect the naming convention
+protein_cols <- setdiff(names(data), c("SampleID", "Age", "Sex"))
+fmt <- detect_format(protein_cols)
+print(fmt)  # e.g., "gene", "uniprot", "seqid_sl", "seqid_dot"
+```
+
+### Step 2: (Optional) Convert to a different format
+
+```r
+# Convert gene symbols to UniProt accessions
+data <- convert_format(data, target_format = "uniprot",
+                       id_col = "SampleID", age_col = "Age")
+```
+
+### Step 3: Compute proteomic age
+
+```r
+# Tanaka 2018 clock — specify how to match your column names
+result_tanaka <- compute_tanaka2018_age(
+  data,
+  id_col = "SampleID",
+  age_col = "Age",
+  match_by = fmt
 )
 
-# Compute — package auto-detects gene symbols
-result <- compute_tanaka2018_age(data, match_by = "gene")
-result <- compute_lehallier2019_age(data, match_by = "gene")
+# Lehallier 2019 clock (includes sex as covariate)
+result_leh <- compute_lehallier2019_age(
+  data,
+  id_col = "SampleID",
+  age_col = "Age",
+  sex_col = "Sex",
+  match_by = fmt
+)
 
-head(result)
+head(result_tanaka)
+```
+
+### Demo with synthetic data
+
+```r
+# Generate realistic demo data with many proteins
+prots <- tanaka2018_proteins()
+demo <- data.frame(
+  SampleID = paste0("P", 1:10),
+  Age = c(32, 45, 51, 63, 71, 38, 55, 67, 42, 78),
+  Sex = c(0, 1, 0, 1, 0, 1, 1, 0, 1, 0)
+)
+set.seed(123)
+for (i in 1:min(nrow(prots), 20)) {
+  demo[[prots$Gene[i]]] <- round(rlnorm(10, meanlog = log(2000), sdlog = 0.5))
+}
+
+result <- compute_tanaka2018_age(demo, match_by = "gene")
+print(result[, c("id", "chronological_age", "proteomic_age", "age_acceleration")])
 ```
 
 ## Log Transform
