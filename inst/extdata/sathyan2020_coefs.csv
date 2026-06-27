@@ -1,0 +1,9 @@
+SOMAID,Gene,UniProt,Weight,seqid_sl,seqid_dot
+# PLACEHOLDER — Download from Sathyan et al. (2020) Aging Cell 19(11):e13250
+# DOI: 10.1111/acel.13250
+# Supplementary Tables at: https://onlinelibrary.wiley.com/doi/10.1111/acel.13250
+# Model: log(SOMAmer) ~ age + gender + cohort
+# Elastic net (alpha=0.5, 10-fold CV), 4,265 SOMAmers
+# Format: SOMAID=SeqId, Gene=gene symbol, UniProt=accession, Weight=coefficient
+# First row should be: (Intercept),,,<intercept_value>,,,,
+(Intercept),,PLACEHOLDER,0.0,,,

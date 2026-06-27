@@ -18,6 +18,7 @@ remotes::install_github("EnricMartin/proteomicAge")
 |-------|----------|--------|---|-----------|
 | **Tanaka 2018** | 76 | Elastic Net | 0.94 | Tanaka et al. Aging Cell (2018) |
 | **Lehallier 2019** | 373 | LASSO | 0.93-0.97 | Lehallier et al. Nat Med (2019) |
+| **Sathyan 2020** | 4,265 | Elastic Net | — | Sathyan et al. Aging Cell (2020) |
 
 ## Input Format
 
@@ -140,6 +141,9 @@ Elastic Net (α=0.5, λ=0.8767859, 10-fold CV), log₂ transform. 76 proteins; r
 **Lehallier et al. (2019):** 2,925 SOMAscan proteins, 4,263 adults (INTERVAL + LonGenity).
 LASSO (α=1.0, λ.min, 10-fold CV), log₁₀ transform + Z-scaling. 373 proteins; r=0.93-0.97.
 
+**Sathyan et al. (2020):** 4,265 SOMAscan v4 proteins, 1,025 older adults (LonGenity).
+Elastic Net (α=0.5, 10-fold CV), log transform. Model: log(SOMAmer) ~ age + gender + cohort.
+
 ## Citation
 
 ```
@@ -148,6 +152,9 @@ Aging Cell. 2018;17(5):e12799.
 
 Lehallier B, et al. Undulating changes in human plasma proteome profiles
 across the lifespan. Nat Med. 2019;25(12):1843-1850.
+
+Sathyan S, et al. Plasma proteomic profile of age, health span, and
+all-cause mortality in older adults. Aging Cell. 2020;19(11):e13250.
 ```
 
 ## License

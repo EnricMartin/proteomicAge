@@ -2,6 +2,7 @@
 
 .tanaka2018_cache     <- new.env(parent = emptyenv())
 .lehallier2019_cache  <- new.env(parent = emptyenv())
+.sathyan2020_cache    <- new.env(parent = emptyenv())
 
 load_tanaka2018_coefs <- function() {
   if (is.null(.tanaka2018_cache$coefs)) {
@@ -53,6 +54,38 @@ load_lehallier2019_coefs <- function() {
     }
     .lehallier2019_cache$lookup_Weight <- stats::setNames(
       .lehallier2019_cache$proteins$Weight, .lehallier2019_cache$proteins$SOMAID)
+  }
+  invisible()
+}
+
+load_sathyan2020_coefs <- function() {
+  if (is.null(.sathyan2020_cache$coefs)) {
+    path <- system.file("extdata", "sathyan2020_coefs.csv",
+                        package = "proteomicAge", mustWork = FALSE)
+    if (!file.exists(path)) {
+      .sathyan2020_cache$proteins  <- data.frame()
+      .sathyan2020_cache$intercept <- 0
+      return(invisible())
+    }
+    coefs <- utils::read.csv(path, stringsAsFactors = FALSE)
+    coefs <- coefs[!grepl("^#", coefs$SOMAID), ]
+    .sathyan2020_cache$intercept <- coefs$Weight[coefs$SOMAID == "(Intercept)"]
+    .sathyan2020_cache$proteins  <- coefs[coefs$SOMAID != "(Intercept)", ]
+    col_map <- c(seqid_sl = "seqid_sl", gene = "Gene", uniprot = "UniProt", seqid_dot = "seqid_dot")
+    for (mb in names(col_map)) {
+      col <- col_map[mb]
+      lk <- stats::setNames(.sathyan2020_cache$proteins$SOMAID,
+                             .sathyan2020_cache$proteins[[col]])
+      lk <- lk[!is.na(names(lk)) & names(lk) != "" & lk != ""]
+      .sathyan2020_cache[[paste0("lookup_", mb)]] <- lk
+      if (mb == "seqid_dot") {
+        prefixed <- lk
+        names(prefixed) <- paste0("seq.", names(lk))
+        .sathyan2020_cache[["lookup_seqid_dot"]] <- c(lk, prefixed)
+      }
+    }
+    .sathyan2020_cache$lookup_Weight <- stats::setNames(
+      .sathyan2020_cache$proteins$Weight, .sathyan2020_cache$proteins$SOMAID)
   }
   invisible()
 }
