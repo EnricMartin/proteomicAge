@@ -25,7 +25,7 @@ detect_format <- function(colnames_vec) {
   load_plist()
   pl <- .plist$data
   n_sl   <- sum(colnames_vec %in% pl$seqid_sl, na.rm = TRUE)
-  n_dot  <- sum(grepl("^(seq[.])?[0-9]+[.][0-9]+[.][0-9]+$", colnames_vec, ignore.case = TRUE))
+  n_dot  <- sum(grepl("^(seq[.])?[0-9]+[.][0-9]+([.][0-9]+)?$", colnames_vec, ignore.case = TRUE))
   n_full <- sum(grepl("^[A-Za-z0-9_]+[.][0-9]+[.][0-9]+[.][0-9]+$", colnames_vec))
   n_gene <- sum(colnames_vec %in% pl$EntrezGeneSymbol, na.rm = TRUE)
   n_up   <- sum(grepl("^[OPQ][0-9][A-Z0-9]{3}[0-9]$|^[A-NR-Z][0-9]([A-Z][A-Z0-9]{2}[0-9]){1,2}$", colnames_vec))
