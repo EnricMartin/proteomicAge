@@ -4,6 +4,7 @@
 .lehallier2019_cache       <- new.env(parent = emptyenv())
 .sathyan2020_cache         <- new.env(parent = emptyenv())
 .oh2023_conventional_cache <- new.env(parent = emptyenv())
+.wang2024_aric_cache      <- new.env(parent = emptyenv())
 
 load_tanaka2018_coefs <- function() {
   if (is.null(.tanaka2018_cache$coefs)) {
@@ -113,6 +114,32 @@ load_oh2023_conventional_coefs <- function() {
     }
     .oh2023_conventional_cache$lookup_Weight <- stats::setNames(
       .oh2023_conventional_cache$proteins$Weight, .oh2023_conventional_cache$proteins$SOMAID)
+  }
+  invisible()
+}
+
+load_wang2024_aric_coefs <- function() {
+  if (is.null(.wang2024_aric_cache$coefs)) {
+    path <- system.file("extdata", "wang2024_aric_midlife_coefs.csv",
+                        package = "proteomicAge", mustWork = TRUE)
+    coefs <- utils::read.csv(path, stringsAsFactors = FALSE)
+    .wang2024_aric_cache$intercept <- coefs$Weight[coefs$SOMAID == "(Intercept)"]
+    .wang2024_aric_cache$proteins  <- coefs[coefs$SOMAID != "(Intercept)", ]
+    col_map <- c(seqid_sl = "seqid_sl", gene = "Gene", uniprot = "UniProt", seqid_dot = "seqid_dot")
+    for (mb in names(col_map)) {
+      col <- col_map[mb]
+      lk <- stats::setNames(.wang2024_aric_cache$proteins$SOMAID,
+                             .wang2024_aric_cache$proteins[[col]])
+      lk <- lk[!is.na(names(lk)) & names(lk) != "" & lk != ""]
+      .wang2024_aric_cache[[paste0("lookup_", mb)]] <- lk
+      if (mb == "seqid_dot") {
+        prefixed <- lk
+        names(prefixed) <- paste0("seq.", names(lk))
+        .wang2024_aric_cache[["lookup_seqid_dot"]] <- c(lk, prefixed)
+      }
+    }
+    .wang2024_aric_cache$lookup_Weight <- stats::setNames(
+      .wang2024_aric_cache$proteins$Weight, .wang2024_aric_cache$proteins$SOMAID)
   }
   invisible()
 }
