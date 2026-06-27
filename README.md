@@ -18,7 +18,8 @@ remotes::install_github("EnricMartin/proteomicAge")
 |-------|----------|--------|---|-----------|
 | **Tanaka 2018** | 76 | Elastic Net | 0.94 | Tanaka et al. Aging Cell (2018) |
 | **Lehallier 2019** | 373 | LASSO | 0.93-0.97 | Lehallier et al. Nat Med (2019) |
-| **Sathyan 2020** | 4,265 | Elastic Net | — | Sathyan et al. Aging Cell (2020) |
+| **Sathyan 2020** | 162 | Elastic Net | — | Sathyan et al. Aging Cell (2020) |
+| **Oh 2023** | 4,778 | Bagged LASSO | — | Oh et al. Nature (2023) |
 
 ## Input Format
 
