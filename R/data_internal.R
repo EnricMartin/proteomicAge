@@ -94,26 +94,37 @@ load_sathyan2020_coefs <- function() {
 
 load_oh2023_conventional_coefs <- function() {
   if (is.null(.oh2023_conventional_cache$coefs)) {
-    path <- system.file("extdata", "oh2023_conventional_coefs.csv",
-                        package = "proteomicAge", mustWork = TRUE)
-    coefs <- utils::read.csv(path, stringsAsFactors = FALSE)
-    .oh2023_conventional_cache$intercept <- coefs$Weight[coefs$SOMAID == "(Intercept)"]
-    .oh2023_conventional_cache$proteins  <- coefs[coefs$SOMAID != "(Intercept)", ]
+    model_path <- system.file("extdata", "oh2023_conventional_models.csv",
+                              package = "proteomicAge", mustWork = TRUE)
+    protein_path <- system.file("extdata", "oh2023_conventional_proteins.csv",
+                                package = "proteomicAge", mustWork = TRUE)
+    coefs <- utils::read.csv(model_path, stringsAsFactors = FALSE, check.names = FALSE)
+    proteins <- utils::read.csv(protein_path, stringsAsFactors = FALSE, check.names = FALSE)
+    protein_cols <- setdiff(names(coefs), c("organ", "bootstrap_seed", "y_intercept", "Sex_F"))
+    .oh2023_conventional_cache$coefs <- coefs
+    .oh2023_conventional_cache$proteins <- proteins
+    .oh2023_conventional_cache$protein_cols <- protein_cols
+    .oh2023_conventional_cache$intercept <- coefs$y_intercept
+    .oh2023_conventional_cache$sex_weight <- coefs$Sex_F
+    .oh2023_conventional_cache$weight_matrix <- as.matrix(coefs[, protein_cols, drop = FALSE])
     col_map <- c(seqid_sl = "seqid_sl", gene = "Gene", uniprot = "UniProt", seqid_dot = "seqid_dot")
     for (mb in names(col_map)) {
       col <- col_map[mb]
-      lk <- stats::setNames(.oh2023_conventional_cache$proteins$SOMAID,
+      lk <- stats::setNames(.oh2023_conventional_cache$proteins$seqid_dot,
                              .oh2023_conventional_cache$proteins[[col]])
       lk <- lk[!is.na(names(lk)) & names(lk) != "" & lk != ""]
       .oh2023_conventional_cache[[paste0("lookup_", mb)]] <- lk
       if (mb == "seqid_dot") {
         prefixed <- lk
-        names(prefixed) <- paste0("seq.", names(lk))
-        .oh2023_conventional_cache[["lookup_seqid_dot"]] <- c(lk, prefixed)
+        names(prefixed) <- sub("^seq[.]", "", names(lk), ignore.case = TRUE)
+        full <- stats::setNames(.oh2023_conventional_cache$proteins$seqid_dot,
+                                 .oh2023_conventional_cache$proteins$seqid_dot_full)
+        full <- full[!is.na(names(full)) & names(full) != "" & full != ""]
+        .oh2023_conventional_cache[["lookup_seqid_dot"]] <- c(lk, prefixed, full)
       }
     }
     .oh2023_conventional_cache$lookup_Weight <- stats::setNames(
-      .oh2023_conventional_cache$proteins$Weight, .oh2023_conventional_cache$proteins$SOMAID)
+      .oh2023_conventional_cache$proteins$Weight, .oh2023_conventional_cache$proteins$seqid_dot)
   }
   invisible()
 }

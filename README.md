@@ -1,7 +1,7 @@
 # proteomicAge
 
 Compute biological age from plasma proteomic data using published proteomic
-aging clocks.
+aging clocks, including the **Global proteomic age ensemble**.
 
 **Contributed by:** Han Xiao (hx624@ic.ac.uk), Esther Herrera, Arias Julian,
 Juan-Carlos Rivilla, Oliver Robinson.
@@ -14,16 +14,24 @@ remotes::install_github("EnricMartin/proteomicAge")
 
 ## Supported clocks
 
-`proteomicAge` currently provides five published proteomic aging clocks.
-Each clock has a `compute_*_age()` function for prediction and a matching
-`*_proteins()` function for listing the proteins used by that model.
+`proteomicAge` currently provides five published conventional proteomic aging
+clocks plus the **Global proteomic age ensemble**.
+
+**Key feature:** `compute_global_age()` implements the **Global proteomic clock**
+from Robinson et al. (2026, Nature Aging), which averages proteomic ages and
+age gaps across Tanaka 2018, Lehallier 2019, Sathyan 2020, Oh 2023, and
+Wang 2024.
+
+Each conventional clock has a `compute_*_age()` function for prediction and a
+matching `*_proteins()` function for listing the proteins used by that model.
 
 | Clock | Function | Proteins | Default `match_by` | Transform | Notes |
 |-------|----------|----------|--------------------|-----------|-------|
+| **Global proteomic age** | `compute_global_age()` | Ensemble of five clocks | `seqid_dot` | Clock-specific | **Averages the five conventional proteomic ages and age gaps** |
 | Tanaka 2018 | `compute_tanaka2018_age()` | 76 | `uniprot` | `log2` | Elastic net clock trained on SOMAscan 1.3K data |
 | Lehallier 2019 | `compute_lehallier2019_age()` | 373 | `uniprot` | `log10` | LASSO clock; accepts an optional sex column |
 | Sathyan 2020 | `compute_sathyan2020_age()` | 162 | `uniprot` | natural log | Elastic net clock from LonGenity SOMAscan v4 data |
-| Oh 2023 conventional | `compute_oh2023_conventional_age()` | 4,778 | `seqid_dot` | natural log | Conventional whole-body clock from the organ aging study |
+| Oh 2023 conventional | `compute_oh2023_conventional_age()` | 4,778 | `seqid_dot` | natural log | 500-model bagged LASSO ensemble from the organ aging study |
 | Wang 2024 ARIC midlife | `compute_wang2024_aric_age()` | 788 | `seqid_dot` | `log2` | Elastic net clock trained in the ARIC midlife cohort |
 
 ## Input format
@@ -75,7 +83,22 @@ tanaka_age <- compute_tanaka2018_age(
 head(tanaka_age)
 ```
 
-Run all five clocks:
+Run the **Global proteomic age ensemble**:
+
+```r
+global_age <- compute_global_age(
+  dat,
+  id_col = "SampleID",
+  age_col = "Age",
+  sex_col = "Sex",
+  male_value = 0,
+  match_by = fmt
+)
+
+head(global_age)
+```
+
+Run all five conventional clocks separately:
 
 ```r
 tanaka_age <- compute_tanaka2018_age(
@@ -141,7 +164,8 @@ dat_uniprot <- convert_format(
 ## Output
 
 Each `compute_*_age()` function returns a data frame with the same standard
-columns.
+columns. `compute_global_age()` returns these columns plus the component ages
+and age accelerations from each of the five conventional clocks.
 
 | Column | Description |
 |--------|-------------|
@@ -194,11 +218,17 @@ INTERVAL and LonGenity. LASSO model with 373 selected proteins.
 the LonGenity cohort. Elastic net model with 162 selected proteins.
 
 **Oh et al. (2023):** SOMAscan v4 organ aging study. The conventional
-proteomic age model is implemented as `compute_oh2023_conventional_age()`.
+proteomic age model is implemented as the original 500-model bagged LASSO
+ensemble in `compute_oh2023_conventional_age()`.
 
 **Wang et al. (2024):** Population-based proteomic aging clock development
 and replication study. The ARIC midlife model is implemented as
 `compute_wang2024_aric_age()`.
+
+**Robinson et al. (2026):** Associations of proteomic age clocks with lifestyle
+risk factors, incident chronic diseases and mortality in two European cohorts.
+The **Global proteomic clock** averages predicted ages and age gaps from the
+five conventional clocks and is implemented as `compute_global_age()`.
 
 ## Citation
 
@@ -218,6 +248,10 @@ and disease. Nature. 2023;624:164-172.
 Wang S, et al. Development, characterization, and replication of proteomic
 aging clocks: analysis of 2 population-based cohorts. PLOS Medicine.
 2024;21(9):e1004464.
+
+Robinson O, et al. Associations of proteomic age clocks with lifestyle risk
+factors, incident chronic diseases and mortality in two European cohorts.
+Nature Aging. 2026. doi:10.1038/s43587-026-01163-6.
 ```
 
 ## License

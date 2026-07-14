@@ -1,218 +1,233 @@
 ---
-title: "proteomicAge: Manual & Pipeline"
+title: "proteomicAge: clocks, Global Age, and input formats"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Manual & Pipeline}
+  %\VignetteIndexEntry{proteomicAge clocks and Global Age}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo=TRUE, message=FALSE, warning=FALSE)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 library(proteomicAge)
 ```
 
 # Overview
 
-`proteomicAge` computes biological age from SOMAscan proteomic data.
-Protein columns can use gene symbols, `seq.xxx.xx` SeqIds, `SLxxxxxx` SeqIds,
-or UniProt accessions. The package auto-detects the naming convention and maps
-it to the clock's internal format via `prolist.csv` (7,596 proteins).
+`proteomicAge` computes biological age from SomaScan plasma proteomic data.
+Protein columns can be named as gene symbols, UniProt accessions, SomaScan
+SL IDs, or SomaScan dot-format SeqIds.
 
-**Contributed by:** Han Xiao (hx624@ic.ac.uk), Esther Herrera, Arias Julian,
-Juan-Carlos Rivilla, Oliver Robinson.
+The package includes five conventional proteomic aging clocks:
 
-# Installation
+| Clock | Function | Main input format |
+|---|---|---|
+| Tanaka 2018 | `compute_tanaka2018_age()` | UniProt, gene, SL ID, or SeqId |
+| Lehallier 2019 | `compute_lehallier2019_age()` | UniProt, gene, SL ID, or SeqId |
+| Sathyan 2020 | `compute_sathyan2020_age()` | UniProt, gene, SL ID, or SeqId |
+| Oh 2023 conventional | `compute_oh2023_conventional_age()` | SeqId recommended |
+| Wang 2024 ARIC midlife | `compute_wang2024_aric_age()` | SeqId recommended |
+
+It also includes the **Global proteomic age ensemble**:
 
 ```r
-remotes::install_github("EnricMartin/proteomicAge")
+compute_global_age()
 ```
 
-# Input Format
+`compute_global_age()` implements the Global proteomic clock from Robinson
+et al. (2026, Nature Aging). It averages predicted ages and age gaps from the
+five conventional clocks.
 
-| Column | Required | Description |
-|--------|----------|-------------|
-| Sample ID | Yes | Unique sample identifier |
-| Age | Yes | Chronological age in years |
-| Sex | No | 0 = male, 1 = female (Lehallier clock) |
-| Protein columns | Yes | Named using one of the conventions below |
+# Input data
 
-**Supported protein naming:**
+Input data should have one row per sample and one column per protein.
 
-| Convention | Example |
+| Column | Required | Notes |
+|---|---|---|
+| Sample ID | Yes | Set with `id_col` |
+| Age | Yes | Chronological age, set with `age_col` |
+| Sex | Optional | Set with `sex_col`; `0 = male`, `1 = female` by default |
+| Protein columns | Yes | Numeric SomaScan RFU values |
+
+Supported protein naming conventions:
+
+| `match_by` | Example |
 |---|---|
-| Gene symbol | `GDF15`, `CHI3L1`, `SOST` |
-| SeqId dot | `seq.4374.45.2`, `11104.13.3` |
-| SeqId SL | `SL003869`, `SL003340` |
-| UniProt | `P36222`, `Q99988` |
+| `seqid_dot` | `seq.4374.45`, `4374.45`, `seq.4374.45.2` |
+| `seqid_sl` | `SL003869` |
+| `gene` | `GDF15` |
+| `uniprot` | `P36222` |
 
-# Step-by-Step Usage
-
-## Step 1: Detect Format
+Use `detect_format()` when you are not sure how your protein columns are named.
 
 ```{r}
-protein_cols <- c("GDF15", "CHI3L1", "SOST", "PTN", "ADAMTS5",
-                  "MMP12", "EGFR", "IGFBP3", "CLU", "ALB")
-detect_format(protein_cols)
+detect_format(c("seq.4374.45", "seq.3045.72", "seq.11104.130"))
+detect_format(c("GDF15", "PTN", "CHI3L1"))
+detect_format(c("SL003340", "SL012561"))
 ```
 
-## Step 2: Convert Format (Optional)
+# Recommended workflow
 
-```{r}
-data <- data.frame(
-  SampleID = paste0("P", 1:5),
-  Age = c(40, 55, 62, 71, 35),
-  Sex = c(0, 1, 0, 1, 0),
-  GDF15 = c(2000, 5000, 9000, 15000, 1800),
-  CHI3L1 = c(1500, 3000, 5500, 8000, 1200),
-  SOST = c(1000, 2500, 4500, 7000, 900),
-  PTN = c(1800, 2800, 5000, 8500, 1600),
-  ADAMTS5 = c(2200, 4000, 6500, 10000, 2000),
-  MMP12 = c(800, 2000, 3500, 5500, 700),
-  EGFR = c(3000, 4500, 4000, 6000, 2800),
-  IGFBP3 = c(5000, 3500, 2500, 1800, 5500),
-  CLU = c(12000, 15000, 18000, 20000, 10000),
-  ALB = c(35000, 38000, 32000, 30000, 40000)
-)
+For a full SomaScan dataset, the usual workflow is:
 
-# Convert gene symbols to UniProt accessions
-data_up <- convert_format(data, target_format = "uniprot",
-                          id_col = "SampleID", age_col = "Age")
-head(names(data_up))
-```
+```r
+dat <- read.csv("my_somascan_data.csv")
 
-## Step 3: Compute Proteomic Age
+protein_cols <- setdiff(names(dat), c("SampleID", "Age", "Sex"))
+fmt <- detect_format(protein_cols)
 
-```{r}
-# Tanaka 2018 — with explicit column name parameters
-result_tanaka <- compute_tanaka2018_age(
-  data,
-  id_col = "SampleID",
-  age_col = "Age",
-  match_by = "gene"
-)
-print(result_tanaka[, c("id", "chronological_age", "proteomic_age", "age_acceleration")])
-```
-
-```{r}
-# Lehallier 2019 — includes sex as covariate
-result_leh <- compute_lehallier2019_age(
-  data,
+global_age <- compute_global_age(
+  dat,
   id_col = "SampleID",
   age_col = "Age",
   sex_col = "Sex",
-  match_by = "gene"
+  male_value = 0,
+  match_by = fmt
 )
-print(result_leh[, c("id", "chronological_age", "proteomic_age", "age_acceleration")])
 ```
 
-# Function Reference
+The result contains the Global proteomic age and the component clocks:
 
-## `detect_format()`
+| Column | Meaning |
+|---|---|
+| `proteomic_age` | Mean predicted age across five conventional clocks |
+| `age_acceleration` | Mean age gap across five conventional clocks |
+| `n_clocks` | Number of component clocks used |
+| `*_age` | Component clock predicted age |
+| `*_age_acceleration` | Component clock age gap |
+
+# Running individual clocks
+
+You can also run the clocks separately.
+
+```r
+tanaka_age <- compute_tanaka2018_age(
+  dat,
+  id_col = "SampleID",
+  age_col = "Age",
+  match_by = fmt
+)
+
+lehallier_age <- compute_lehallier2019_age(
+  dat,
+  id_col = "SampleID",
+  age_col = "Age",
+  sex_col = "Sex",
+  male_value = 0,
+  match_by = fmt
+)
+
+sathyan_age <- compute_sathyan2020_age(
+  dat,
+  id_col = "SampleID",
+  age_col = "Age",
+  sex_col = "Sex",
+  match_by = fmt
+)
+
+oh_age <- compute_oh2023_conventional_age(
+  dat,
+  id_col = "SampleID",
+  age_col = "Age",
+  sex_col = "Sex",
+  match_by = fmt
+)
+
+wang_age <- compute_wang2024_aric_age(
+  dat,
+  id_col = "SampleID",
+  age_col = "Age",
+  match_by = fmt
+)
+```
+
+# Clock protein lists
+
+Each conventional clock has a helper that returns the model proteins.
 
 ```{r}
-detect_format(c("GDF15", "CHI3L1"))
-detect_format(c("P36222", "Q99988"))
-detect_format(c("SL003869"))
-detect_format(c("seq.4374.45.2"))
+nrow(tanaka2018_proteins())
+nrow(lehallier2019_proteins())
+nrow(sathyan2020_proteins())
+nrow(oh2023_conventional_proteins())
+nrow(wang2024_aric_proteins())
 ```
 
-## `convert_format()`
+# Small executable example
 
-```{r}
-demo <- data.frame(SampleID = "S1", Age = 50, GDF15 = 5000)
-convert_format(demo, target_format = "uniprot",
-               id_col = "SampleID", age_col = "Age")
-```
-
-## `compute_tanaka2018_age()`
-
-76-protein elastic net clock. log₂ transform.
-
-| Parameter | Default | Description |
-|---|---|---|
-| `data` | (required) | data.frame with protein columns + Age |
-| `id_col` | `"SampleID"` | ID column name |
-| `age_col` | `"Age"` | Age column name |
-| `log_transform` | `TRUE` | Apply log₂ transform |
-| `match_by` | `"uniprot"` | `"gene"`, `"uniprot"`, `"seqid_sl"`, `"seqid_dot"` |
-
-## `compute_lehallier2019_age()`
-
-373-protein LASSO clock. log₁₀ transform.
-
-Additional parameters: `sex_col = "Sex"`, `male_value = 0`.
-
-## `preprocess_somascan()`
-
-```{r}
-raw <- data.frame(SampleID = 1:5, SL003869 = c(800, 15000, 300, 2000, 5000))
-preprocess_somascan(raw, protein_cols = "SL003869", report_missingness = FALSE)
-```
-
-# Complete Pipeline
-
-## Step 1: Load & Detect
+This example uses the Tanaka clock because it has a compact 76-protein model
+and can run quickly inside the vignette.
 
 ```{r}
 set.seed(123)
 prots <- tanaka2018_proteins()
-# Use first 20 proteins for demo
-demo_prots <- prots[1:20, ]
-raw <- data.frame(
-  SampleID = paste0("P", 1:30),
-  Age = round(runif(30, 25, 85), 1),
-  Sex = sample(c(0, 1), 30, replace = TRUE)
+
+demo <- data.frame(
+  SampleID = paste0("P", 1:20),
+  Age = round(runif(20, 35, 80), 1),
+  Sex = sample(c(0, 1), 20, replace = TRUE),
+  stringsAsFactors = FALSE
 )
-for (i in 1:nrow(demo_prots)) {
-  raw[[demo_prots$Gene[i]]] <- rlnorm(30, log(2000), 0.5)
+
+for (sid in prots$seqid_sl) {
+  demo[[sid]] <- rlnorm(20, meanlog = log(2000), sdlog = 0.5)
 }
 
-fmt <- detect_format(setdiff(names(raw), c("SampleID", "Age", "Sex")))
-cat("Detected format:", fmt, "\n")
+tanaka_demo <- compute_tanaka2018_age(
+  demo,
+  id_col = "SampleID",
+  age_col = "Age",
+  match_by = "seqid_sl"
+)
+
+head(tanaka_demo)
 ```
 
-## Step 2: Compute
+# Output interpretation
 
-```{r}
-tanaka_age <- compute_tanaka2018_age(raw, id_col = "SampleID", age_col = "Age",
-                                      match_by = fmt)
-leh_age <- compute_lehallier2019_age(raw, id_col = "SampleID", age_col = "Age",
-                                      sex_col = "Sex", match_by = fmt)
+All clock functions return:
+
+| Column | Meaning |
+|---|---|
+| `id` | Sample identifier |
+| `chronological_age` | Input chronological age |
+| `proteomic_age` | Predicted proteomic age |
+| `age_acceleration` | Age gap / residual age acceleration |
+| `n_proteins_matched` | Number of clock proteins found in the input |
+| `n_proteins_missing` | Number of clock proteins not found in the input |
+| `match_by` | Protein identifier convention used |
+
+In the current implementation, each individual clock's `age_acceleration` is
+computed as the residual from:
+
+```r
+lm(proteomic_age ~ chronological_age)
 ```
 
-## Step 3: Visualize
+Positive age acceleration means the sample is predicted to be proteomically
+older than expected for its chronological age in that dataset.
 
-```{r, fig.width=10, fig.height=5}
-par(mfrow = c(1, 2))
-plot(tanaka_age$chronological_age, tanaka_age$proteomic_age,
-     main = "Tanaka 2018", xlab = "Chronological", ylab = "Predicted",
-     pch = 19, col = rgb(0.2, 0.4, 0.6, 0.5))
-abline(0, 1, lty = 2, col = "red")
-r <- cor(tanaka_age$chronological_age, tanaka_age$proteomic_age, use = "complete")
-legend("topleft", legend = paste("r =", round(r, 3)), bty = "n")
+# References
 
-hist(tanaka_age$age_acceleration, breaks = 20, main = "Age Acceleration",
-     xlab = "PROaccel", col = "steelblue", border = "white")
-abline(v = 0, col = "red", lwd = 2)
-```
+Tanaka T, et al. Plasma proteomic signature of age in healthy humans.
+*Aging Cell*. 2018;17(5):e12799.
 
-# Understanding Output
+Lehallier B, et al. Undulating changes in human plasma proteome profiles
+across the lifespan. *Nature Medicine*. 2019;25(12):1843-1850.
 
-| Column | Description |
-|--------|-------------|
-| `proteomic_age` | Predicted biological age |
-| `age_acceleration` | Residuals of `lm(PROage ~ Age)`. Mean ≈ 0 |
-| `n_proteins_matched` | Clock proteins found |
-| `n_proteins_missing` | Clock proteins not found |
-| `match_by` | Naming convention used |
+Sathyan S, et al. Plasma proteomic profile of age, health span, and all-cause
+mortality in older adults. *Aging Cell*. 2020;19(11):e13250.
 
-# Log Transform
+Oh HS, et al. Organ aging signatures in the plasma proteome track health and
+disease. *Nature*. 2023;624:164-172.
 
-| Clock | Transform |
-|-------|-----------|
-| Tanaka 2018 | log₂ |
-| Lehallier 2019 | log₁₀ |
+Wang S, et al. Development, characterization, and replication of proteomic aging
+clocks: analysis of 2 population-based cohorts. *PLOS Medicine*.
+2024;21(9):e1004464.
+
+Robinson O, et al. Associations of proteomic age clocks with lifestyle risk
+factors, incident chronic diseases and mortality in two European cohorts.
+*Nature Aging*. 2026. doi:10.1038/s43587-026-01163-6.
 
 ```{r}
 sessionInfo()

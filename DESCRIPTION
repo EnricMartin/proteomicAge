@@ -9,8 +9,9 @@ Authors@R: c(
 Description: Compute biological age from plasma proteomic data using
     published proteomic aging clocks. Currently implements proteomic
     age models from Tanaka et al. (2018), Lehallier et al. (2019),
-    Sathyan et al. (2020), Oh et al. (2023), and Wang et al. (2024).
-    All computation is local; proteomic data never leaves the machine.
+    Sathyan et al. (2020), Oh et al. (2023), and Wang et al. (2024),
+    plus a Global proteomic age ensemble. All computation is local;
+    proteomic data never leaves the machine.
 License: MIT + file LICENSE
 URL: https://github.com/EnricMartin/proteomicAge
 BugReports: https://github.com/EnricMartin/proteomicAge/issues

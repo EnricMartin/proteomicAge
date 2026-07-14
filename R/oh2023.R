@@ -22,12 +22,14 @@ oh2023_conventional_proteins <- function() {
 #' @param data data.frame with protein columns + Age column.
 #' @param id_col Sample ID column name.
 #' @param age_col Chronological age column name.
+#' @param sex_col Optional sex column name used if present.
 #' @param match_by How to match: "seqid_dot" (default), "uniprot", "gene", "seqid_sl".
 #' @return data.frame with proteomic_age, age_acceleration
 #' @export
 compute_oh2023_conventional_age <- function(data,
                                              id_col = "SampleID",
                                              age_col = "Age",
+                                             sex_col = "Sex_F",
                                              match_by = c("seqid_dot", "uniprot", "gene", "seqid_sl")) {
 
   match_by <- match.arg(match_by)
@@ -38,14 +40,15 @@ compute_oh2023_conventional_age <- function(data,
   load_oh2023_conventional_coefs()
   lk_name <- paste0("lookup_", match_by)
   lookup <- .oh2023_conventional_cache[[lk_name]]
-  weight_lk <- .oh2023_conventional_cache$lookup_Weight
+  weight_matrix <- .oh2023_conventional_cache$weight_matrix
   intercept <- .oh2023_conventional_cache$intercept
+  sex_weight <- .oh2023_conventional_cache$sex_weight
 
-  user_cols <- setdiff(names(data), c(id_col, age_col, "Sex"))
+  user_cols <- setdiff(names(data), c(id_col, age_col, sex_col, "Sex"))
   matched <- intersect(user_cols, names(lookup))
   matched_somaids <- unique(unname(lookup[matched]))
   matched <- matched[!duplicated(unname(lookup[matched]))]
-  unmatched <- setdiff(names(weight_lk), matched_somaids)
+  unmatched <- setdiff(colnames(weight_matrix), matched_somaids)
 
   if (length(unmatched) > 0) {
     message(length(unmatched), " clock proteins not found")
@@ -55,19 +58,21 @@ compute_oh2023_conventional_age <- function(data,
   chron_age <- as.numeric(data[[age_col]])
   n <- nrow(data)
   prot_age <- numeric(n)
+  sex_num <- if (sex_col %in% names(data)) as.numeric(data[[sex_col]]) else rep(0, n)
+  model_index <- match(matched_somaids, colnames(weight_matrix))
 
   for (i in seq_len(n)) {
-    pred <- intercept
+    pred <- intercept + sex_weight * sex_num[i]
     row <- data[i, ]
-    for (col in matched) {
+    vals <- vapply(matched, function(col) {
       val <- row[[col]]
-      if (!is.na(val) && is.numeric(val) && val > 0) {
-        val <- log(val)
-        sid <- lookup[col]
-        pred <- pred + weight_lk[sid] * val
-      }
+      if (!is.na(val) && is.numeric(val) && val > 0) log(val) else NA_real_
+    }, numeric(1))
+    ok <- !is.na(vals)
+    if (any(ok)) {
+      pred <- pred + as.numeric(weight_matrix[, model_index[ok], drop = FALSE] %*% vals[ok])
     }
-    prot_age[i] <- pred
+    prot_age[i] <- mean(pred)
   }
 
   fit <- stats::lm(prot_age ~ chron_age)
