@@ -14,7 +14,7 @@ remotes::install_github("EnricMartin/proteomicAge")
 
 ## Supported clocks
 
-`proteomicAge` currently provides four main published proteomic aging clocks.
+`proteomicAge` currently provides five published proteomic aging clocks.
 Each clock has a `compute_*_age()` function for prediction and a matching
 `*_proteins()` function for listing the proteins used by that model.
 
@@ -24,9 +24,7 @@ Each clock has a `compute_*_age()` function for prediction and a matching
 | Lehallier 2019 | `compute_lehallier2019_age()` | 373 | `uniprot` | `log10` | LASSO clock; accepts an optional sex column |
 | Sathyan 2020 | `compute_sathyan2020_age()` | 162 | `uniprot` | natural log | Elastic net clock from LonGenity SOMAscan v4 data |
 | Oh 2023 conventional | `compute_oh2023_conventional_age()` | 4,778 | `seqid_dot` | natural log | Conventional whole-body clock from the organ aging study |
-
-The package also exports `compute_wang2024_aric_age()` and
-`wang2024_aric_proteins()` for the Wang 2024 ARIC midlife clock.
+| Wang 2024 ARIC midlife | `compute_wang2024_aric_age()` | 788 | `seqid_dot` | `log2` | Elastic net clock trained in the ARIC midlife cohort |
 
 ## Input format
 
@@ -77,7 +75,7 @@ tanaka_age <- compute_tanaka2018_age(
 head(tanaka_age)
 ```
 
-Run all four main clocks:
+Run all five clocks:
 
 ```r
 tanaka_age <- compute_tanaka2018_age(
@@ -110,6 +108,13 @@ oh_age <- compute_oh2023_conventional_age(
   age_col = "Age",
   match_by = fmt
 )
+
+wang_age <- compute_wang2024_aric_age(
+  dat,
+  id_col = "SampleID",
+  age_col = "Age",
+  match_by = fmt
+)
 ```
 
 List the proteins required by a clock:
@@ -119,6 +124,7 @@ tanaka2018_proteins()
 lehallier2019_proteins()
 sathyan2020_proteins()
 oh2023_conventional_proteins()
+wang2024_aric_proteins()
 ```
 
 Convert protein column names when needed:
@@ -190,6 +196,10 @@ the LonGenity cohort. Elastic net model with 162 selected proteins.
 **Oh et al. (2023):** SOMAscan v4 organ aging study. The conventional
 proteomic age model is implemented as `compute_oh2023_conventional_age()`.
 
+**Wang et al. (2024):** Population-based proteomic aging clock development
+and replication study. The ARIC midlife model is implemented as
+`compute_wang2024_aric_age()`.
+
 ## Citation
 
 ```text
@@ -204,6 +214,10 @@ all-cause mortality in older adults. Aging Cell. 2020;19(11):e13250.
 
 Oh HS, et al. Organ aging signatures in the plasma proteome track health
 and disease. Nature. 2023;624:164-172.
+
+Wang S, et al. Development, characterization, and replication of proteomic
+aging clocks: analysis of 2 population-based cohorts. PLOS Medicine.
+2024;21(9):e1004464.
 ```
 
 ## License
