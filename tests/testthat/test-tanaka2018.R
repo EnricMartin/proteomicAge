@@ -2,7 +2,7 @@ test_that("tanaka2018_proteins returns correct structure", {
   prots <- tanaka2018_proteins()
   
   expect_s3_class(prots, "data.frame")
-  expect_equal(names(prots), c("SOMAID", "Gene", "Weight"))
+  expect_true(all(c("SOMAID", "Gene", "UniProt", "Weight", "seqid_sl", "seqid_dot") %in% names(prots)))
   expect_equal(nrow(prots), 76)
   
   # Check intercept exists in cache
@@ -17,7 +17,7 @@ test_that("compute_tanaka2018_age rejects invalid input", {
   )
   expect_error(
     compute_tanaka2018_age(mtcars, id_col = "nonexistent"),
-    "not found in data"
+    "id_col not found"
   )
 })
 
@@ -43,21 +43,22 @@ test_that("compute_tanaka2018_age works with demo data", {
     demo[[sid]] <- runif(10, 500, 15000)
   }
   
-  result <- compute_tanaka2018_age(demo, id_col = "SampleID", age_col = "Age")
+  result <- compute_tanaka2018_age(demo, id_col = "SampleID", age_col = "Age",
+                                   match_by = "seqid_sl")
   
   expect_s3_class(result, "data.frame")
   expect_equal(nrow(result), 10)
   expect_equal(names(result), c(
     "id", "chronological_age", "proteomic_age",
-    "age_acceleration", "n_proteins_matched", "n_proteins_missing"
+    "age_acceleration", "n_proteins_matched", "n_proteins_missing",
+    "match_by"
   ))
   expect_equal(result$chronological_age, demo$Age)
   expect_equal(result$n_proteins_matched, rep(76, 10))
   expect_equal(result$n_proteins_missing, rep(0, 10))
   
-  # Age acceleration should be computed
-  expect_equal(result$age_acceleration,
-               result$proteomic_age - result$chronological_age)
+  # Age acceleration is the residual from proteomic_age ~ chronological_age.
+  expect_equal(mean(result$age_acceleration), 0, tolerance = 1e-8)
 })
 
 test_that("compute_tanaka2018_age warns on missing proteins", {
@@ -76,8 +77,9 @@ test_that("compute_tanaka2018_age warns on missing proteins", {
   }
   
   expect_warning(
-    compute_tanaka2018_age(demo, id_col = "SampleID", age_col = "Age"),
-    "not found in data"
+    compute_tanaka2018_age(demo, id_col = "SampleID", age_col = "Age",
+                           match_by = "seqid_sl"),
+    "clock proteins not found"
   )
 })
 

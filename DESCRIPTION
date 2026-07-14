@@ -7,11 +7,10 @@ Authors@R: c(
     person("Xiaohan", role = c("aut", "cre"), email = "xiaohan@clawbio.org")
   )
 Description: Compute biological age from plasma proteomic data using
-    published proteomic aging clocks. Currently implements the Tanaka
-    et al. (2018) 76-protein elastic net clock trained on SOMAscan
-    1.3K data. Additional clocks (Lehallier 2019, Lehallier 2020,
-    Sathyan 2020) will be added in future releases. All computation
-    is local — proteomic data never leaves the machine.
+    published proteomic aging clocks. Currently implements proteomic
+    age models from Tanaka et al. (2018), Lehallier et al. (2019),
+    Sathyan et al. (2020), Oh et al. (2023), and Wang et al. (2024).
+    All computation is local; proteomic data never leaves the machine.
 License: MIT + file LICENSE
 URL: https://github.com/EnricMartin/proteomicAge
 BugReports: https://github.com/EnricMartin/proteomicAge/issues

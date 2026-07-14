@@ -182,8 +182,14 @@ validate_somascan_input <- function(data,
     required_proteins <- .tanaka2018_cache$proteins$SOMAID
   }
 
-  present  <- required_proteins %in% names(data)
-  coverage <- sum(present) / length(required_proteins) * 100
+  if (length(required_proteins) == 0) {
+    coverage <- 100
+    present <- logical(0)
+  } else {
+    present  <- required_proteins %in% names(data)
+    coverage <- sum(present) / length(required_proteins) * 100
+  }
+
   results$protein_coverage <- coverage
 
   if (coverage < 100) {

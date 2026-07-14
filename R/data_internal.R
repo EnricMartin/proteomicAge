@@ -123,6 +123,9 @@ load_wang2024_aric_coefs <- function() {
     path <- system.file("extdata", "wang2024_aric_midlife_coefs.csv",
                         package = "proteomicAge", mustWork = TRUE)
     coefs <- utils::read.csv(path, stringsAsFactors = FALSE)
+    missing_dot <- coefs$SOMAID != "(Intercept)" &
+      (is.na(coefs$seqid_dot) | coefs$seqid_dot == "")
+    coefs$seqid_dot[missing_dot] <- paste0("seq.", gsub("-", ".", coefs$SOMAID[missing_dot]))
     .wang2024_aric_cache$intercept <- coefs$Weight[coefs$SOMAID == "(Intercept)"]
     .wang2024_aric_cache$proteins  <- coefs[coefs$SOMAID != "(Intercept)", ]
     col_map <- c(seqid_sl = "seqid_sl", gene = "Gene", uniprot = "UniProt", seqid_dot = "seqid_dot")

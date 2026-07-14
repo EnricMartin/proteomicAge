@@ -45,7 +45,9 @@ compute_wang2024_aric_age <- function(data,
 
   user_cols <- setdiff(names(data), c(id_col, age_col, "Sex"))
   matched <- intersect(user_cols, names(lookup))
-  unmatched <- setdiff(names(lookup), user_cols)
+  matched_somaids <- unique(unname(lookup[matched]))
+  matched <- matched[!duplicated(unname(lookup[matched]))]
+  unmatched <- setdiff(names(weight_lk), matched_somaids)
 
   if (length(unmatched) > 0) message(length(unmatched), " clock proteins not found")
 

@@ -43,7 +43,9 @@ compute_lehallier2019_age <- function(data,
 
   user_cols <- setdiff(names(data), c(id_col, age_col, sex_col))
   matched <- intersect(user_cols, names(lookup))
-  unmatched <- setdiff(names(lookup), user_cols)
+  matched_somaids <- unique(unname(lookup[matched]))
+  matched <- matched[!duplicated(unname(lookup[matched]))]
+  unmatched <- setdiff(names(weight_lk), matched_somaids)
 
   if (length(unmatched) > 0) {
     warning(length(unmatched), " clock proteins not found. Match by: ", match_by)
