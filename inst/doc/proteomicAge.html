@@ -1,61 +1,43 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>proteomicAge: clocks, Global Age, and input formats</title>
 <style>
-body{font-family:Arial,Helvetica,sans-serif;line-height:1.55;max-width:980px;margin:32px auto;padding:0 24px;color:#222}h1,h2,h3{line-height:1.25;margin-top:1.6em}h1{border-bottom:1px solid #ddd;padding-bottom:.3em}table{border-collapse:collapse;width:100%;margin:1em 0}th,td{border:1px solid #ddd;padding:8px;vertical-align:top}th{background:#f5f5f5}code{background:#f6f8fa;padding:2px 4px;border-radius:3px}pre{background:#f6f8fa;padding:14px;overflow:auto;border-radius:6px}pre code{background:transparent;padding:0}strong{font-weight:700}
+body{font-family:Arial,sans-serif;line-height:1.55;max-width:980px;margin:32px auto;padding:0 20px;color:#222}table{border-collapse:collapse;margin:16px 0;width:100%}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background:#f5f5f5}pre{background:#f7f7f7;padding:12px;overflow:auto}code{font-family:Consolas,monospace}h1,h2{line-height:1.2}
 </style>
 </head>
 <body>
-<pre><code class="language-r">knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+<pre><code>knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 library(proteomicAge)</code></pre>
 <h1>Overview</h1>
-<p><code>proteomicAge</code> computes biological age from SomaScan plasma proteomic data.</p>
-<p>Protein columns can be named as gene symbols, UniProt accessions, SomaScan</p>
-<p>SL IDs, or SomaScan dot-format SeqIds.</p>
+<p><code>proteomicAge</code> computes biological age from plasma proteomic data. SomaScan</p>
+<p>clock protein columns can be named as gene symbols, UniProt accessions,</p>
+<p>SomaScan SL IDs, or SomaScan dot-format SeqIds. Olink-based clocks expect</p>
+<p>Olink NPX values with protein columns named by gene symbols.</p>
 <p>The package includes five conventional proteomic aging clocks:</p>
-<table>
-<thead><tr><th>Clock</th><th>Function</th><th>Main input format</th></tr></thead>
-<tbody>
-<tr><td>Tanaka 2018</td><td><code>compute_tanaka2018_age()</code></td><td>UniProt, gene, SL ID, or SeqId</td></tr>
-<tr><td>Lehallier 2019</td><td><code>compute_lehallier2019_age()</code></td><td>UniProt, gene, SL ID, or SeqId</td></tr>
-<tr><td>Sathyan 2020</td><td><code>compute_sathyan2020_age()</code></td><td>UniProt, gene, SL ID, or SeqId</td></tr>
-<tr><td>Oh 2023 conventional</td><td><code>compute_oh2023_conventional_age()</code></td><td>SeqId recommended</td></tr>
-<tr><td>Wang 2024 ARIC midlife</td><td><code>compute_wang2024_aric_age()</code></td><td>SeqId recommended</td></tr>
-</tbody></table>
+<table><tr><th>Clock</th><th>Function</th><th>Main input format</th></tr><tr><td>Tanaka 2018</td><td>`compute_tanaka2018_age()`</td><td>UniProt, gene, SL ID, or SeqId</td></tr><tr><td>Lehallier 2019</td><td>`compute_lehallier2019_age()`</td><td>UniProt, gene, SL ID, or SeqId</td></tr><tr><td>Sathyan 2020</td><td>`compute_sathyan2020_age()`</td><td>UniProt, gene, SL ID, or SeqId</td></tr><tr><td>Oh 2023 conventional</td><td>`compute_oh2023_conventional_age()`</td><td>SeqId recommended</td></tr><tr><td>Wang 2024 ARIC midlife</td><td>`compute_wang2024_aric_age()`</td><td>SeqId recommended</td></tr></table></table>
+<p>The package also includes Olink-based models:</p>
+<table><tr><th>Clock</th><th>Function</th><th>Main input format</th></tr><tr><td>Kuo 2024 PAC</td><td>`compute_kuo2024_pac_age()`</td><td>Olink NPX, gene symbols</td></tr><tr><td>Goeminne organAging</td><td>`compute_goeminne2025_organ_age()`</td><td>Olink NPX, gene symbols</td></tr></table></table>
+<p>Goeminne organAging coefficients are included for academic/non-commercial use</p>
+<p>under the source repository license.</p>
 <p>It also includes the <strong>Global proteomic age ensemble</strong>:</p>
-<pre><code class="language-r">compute_global_age()</code></pre>
+<pre><code>compute_global_age()</code></pre>
 <p><code>compute_global_age()</code> implements the Global proteomic clock from Robinson</p>
 <p>et al. (2026, Nature Aging). It averages predicted ages and age gaps from the</p>
 <p>five conventional clocks.</p>
 <h1>Input data</h1>
 <p>Input data should have one row per sample and one column per protein.</p>
-<table>
-<thead><tr><th>Column</th><th>Required</th><th>Notes</th></tr></thead>
-<tbody>
-<tr><td>Sample ID</td><td>Yes</td><td>Set with <code>id_col</code></td></tr>
-<tr><td>Age</td><td>Yes</td><td>Chronological age, set with <code>age_col</code></td></tr>
-<tr><td>Sex</td><td>Optional</td><td>Set with <code>sex_col</code>; <code>0 = male</code>, <code>1 = female</code> by default</td></tr>
-<tr><td>Protein columns</td><td>Yes</td><td>Numeric SomaScan RFU values</td></tr>
-</tbody></table>
+<table><tr><th>Column</th><th>Required</th><th>Notes</th></tr><tr><td>Sample ID</td><td>Yes</td><td>Set with `id_col`</td></tr><tr><td>Age</td><td>Yes</td><td>Chronological age, set with `age_col`</td></tr><tr><td>Sex</td><td>Optional</td><td>Set with `sex_col`; `0 = male`, `1 = female` by default</td></tr><tr><td>Protein columns</td><td>Yes</td><td>Numeric SomaScan RFU values</td></tr></table></table>
 <p>Supported protein naming conventions:</p>
-<table>
-<thead><tr><th><code>match_by</code></th><th>Example</th></tr></thead>
-<tbody>
-<tr><td><code>seqid_dot</code></td><td><code>seq.4374.45</code>, <code>4374.45</code>, <code>seq.4374.45.2</code></td></tr>
-<tr><td><code>seqid_sl</code></td><td><code>SL003869</code></td></tr>
-<tr><td><code>gene</code></td><td><code>GDF15</code></td></tr>
-<tr><td><code>uniprot</code></td><td><code>P36222</code></td></tr>
-</tbody></table>
+<table><tr><th>`match_by`</th><th>Example</th></tr><tr><td>`seqid_dot`</td><td>`seq.4374.45`, `4374.45`, `seq.4374.45.2`</td></tr><tr><td>`seqid_sl`</td><td>`SL003869`</td></tr><tr><td>`gene`</td><td>`GDF15`</td></tr><tr><td>`uniprot`</td><td>`P36222`</td></tr></table></table>
 <p>Use <code>detect_format()</code> when you are not sure how your protein columns are named.</p>
-<pre><code class="language-r">detect_format(c(&quot;seq.4374.45&quot;, &quot;seq.3045.72&quot;, &quot;seq.11104.130&quot;))
+<pre><code>detect_format(c(&quot;seq.4374.45&quot;, &quot;seq.3045.72&quot;, &quot;seq.11104.130&quot;))
 detect_format(c(&quot;GDF15&quot;, &quot;PTN&quot;, &quot;CHI3L1&quot;))
 detect_format(c(&quot;SL003340&quot;, &quot;SL012561&quot;))</code></pre>
 <h1>Recommended workflow</h1>
 <p>For a full SomaScan dataset, the usual workflow is:</p>
-<pre><code class="language-r">dat &lt;- read.csv(&quot;my_somascan_data.csv&quot;)
+<pre><code>dat &lt;- read.csv(&quot;my_somascan_data.csv&quot;)
 
 protein_cols &lt;- setdiff(names(dat), c(&quot;SampleID&quot;, &quot;Age&quot;, &quot;Sex&quot;))
 fmt &lt;- detect_format(protein_cols)
@@ -69,18 +51,53 @@ global_age &lt;- compute_global_age(
   match_by = fmt
 )</code></pre>
 <p>The result contains the Global proteomic age and the component clocks:</p>
-<table>
-<thead><tr><th>Column</th><th>Meaning</th></tr></thead>
-<tbody>
-<tr><td><code>proteomic_age</code></td><td>Mean predicted age across five conventional clocks</td></tr>
-<tr><td><code>age_acceleration</code></td><td>Mean age gap across five conventional clocks</td></tr>
-<tr><td><code>n_clocks</code></td><td>Number of component clocks used</td></tr>
-<tr><td><code>*_age</code></td><td>Component clock predicted age</td></tr>
-<tr><td><code>*_age_acceleration</code></td><td>Component clock age gap</td></tr>
-</tbody></table>
+<table><tr><th>Column</th><th>Meaning</th></tr><tr><td>`proteomic_age`</td><td>Mean predicted age across five conventional clocks</td></tr><tr><td>`age_acceleration`</td><td>Mean age gap across five conventional clocks</td></tr><tr><td>`n_clocks`</td><td>Number of component clocks used</td></tr><tr><td>`*_age`</td><td>Component clock predicted age</td></tr><tr><td>`*_age_acceleration`</td><td>Component clock age gap</td></tr></table>
+<h1>QC summaries and visualizations</h1>
+<p>The package provides helper functions for QC and comparison of clock outputs.</p>
+<p>They can consume either:</p>
+<ul><li>the output from `compute_global_age()`, which already contains Global Age and</li></ul>
+<p>  the five component clocks; or</p>
+<ul><li>a manually assembled named list of outputs from the individual</li></ul>
+<p>  <code>compute_*_age()</code> functions.</p>
+<p>For a Global Age result:</p>
+<pre><code>qc &lt;- summarize_clock_qc(global_age)
+qc
+
+cormat &lt;- clock_correlation_matrix(global_age, value = &quot;age_acceleration&quot;)
+cormat$correlation
+cormat$p_adjusted
+
+plot_clock_correlation_matrix(global_age, value = &quot;age_acceleration&quot;)
+plot_clock_scatter(global_age, value = &quot;proteomic_age&quot;)
+plot_clock_scatter(global_age, value = &quot;age_acceleration&quot;)</code></pre>
+<p>For individual clock outputs:</p>
+<pre><code>clock_outputs &lt;- list(
+  tanaka2018 = tanaka_age,
+  lehallier2019 = lehallier_age,
+  sathyan2020 = sathyan_age,
+  oh2023_conventional = oh_age,
+  wang2024_aric = wang_age
+)
+
+summarize_clock_qc(clock_outputs)
+plot_clock_correlation_matrix(clock_outputs)</code></pre>
+<p>For datasets with study centers, ancestry groups, ethnicity groups, or</p>
+<p>case-control status, <code>plot_clock_violin()</code> can stratify clock outputs by a</p>
+<p>user-selected categorical variable:</p>
+<pre><code>sample_info &lt;- data.frame(
+  id = global_age$id,
+  center = dat$Center
+)
+
+plot_clock_violin(
+  global_age,
+  group = &quot;center&quot;,
+  sample_data = sample_info,
+  value = &quot;age_acceleration&quot;
+)</code></pre>
 <h1>Running individual clocks</h1>
 <p>You can also run the clocks separately.</p>
-<pre><code class="language-r">tanaka_age &lt;- compute_tanaka2018_age(
+<pre><code>tanaka_age &lt;- compute_tanaka2018_age(
   dat,
   id_col = &quot;SampleID&quot;,
   age_col = &quot;Age&quot;,
@@ -118,17 +135,45 @@ wang_age &lt;- compute_wang2024_aric_age(
   age_col = &quot;Age&quot;,
   match_by = fmt
 )</code></pre>
+<h1>Running Olink-based clocks</h1>
+<p>PAC requires chronological age plus 128 Olink protein predictors:</p>
+<pre><code>pac_age &lt;- compute_kuo2024_pac_age(
+  dat,
+  id_col = &quot;SampleID&quot;,
+  age_col = &quot;Age&quot;
+)</code></pre>
+<p>Goeminne organAging returns one row per sample and organ. Chronological models</p>
+<p>return organ-specific predicted ages and age accelerations:</p>
+<pre><code>goeminne_age &lt;- compute_goeminne2025_organ_age(
+  dat,
+  id_col = &quot;SampleID&quot;,
+  age_col = &quot;Age&quot;,
+  organs = c(&quot;Conventional&quot;, &quot;Heart&quot;, &quot;Brain&quot;),
+  model_type = &quot;chronological&quot;,
+  fold = 1
+)</code></pre>
+<p>Mortality-based Goeminne models return <code>mortality_score</code>, a relative</p>
+<p>log-mortality-hazard score, rather than age in years:</p>
+<pre><code>goeminne_mortality &lt;- compute_goeminne2025_organ_age(
+  dat,
+  id_col = &quot;SampleID&quot;,
+  age_col = &quot;Age&quot;,
+  organs = &quot;Conventional&quot;,
+  model_type = &quot;mortality&quot;
+)</code></pre>
 <h1>Clock protein lists</h1>
-<p>Each conventional clock has a helper that returns the model proteins.</p>
-<pre><code class="language-r">nrow(tanaka2018_proteins())
+<p>Each clock has a helper that returns the model proteins.</p>
+<pre><code>nrow(tanaka2018_proteins())
 nrow(lehallier2019_proteins())
 nrow(sathyan2020_proteins())
 nrow(oh2023_conventional_proteins())
-nrow(wang2024_aric_proteins())</code></pre>
+nrow(wang2024_aric_proteins())
+nrow(kuo2024_pac_proteins())
+length(unique(goeminne2025_organaging_proteins()$protein))</code></pre>
 <h1>Small executable example</h1>
 <p>This example uses the Tanaka clock because it has a compact 76-protein model</p>
 <p>and can run quickly inside the vignette.</p>
-<pre><code class="language-r">set.seed(123)
+<pre><code>set.seed(123)
 prots &lt;- tanaka2018_proteins()
 
 demo &lt;- data.frame(
@@ -152,37 +197,27 @@ tanaka_demo &lt;- compute_tanaka2018_age(
 head(tanaka_demo)</code></pre>
 <h1>Output interpretation</h1>
 <p>All clock functions return:</p>
-<table>
-<thead><tr><th>Column</th><th>Meaning</th></tr></thead>
-<tbody>
-<tr><td><code>id</code></td><td>Sample identifier</td></tr>
-<tr><td><code>chronological_age</code></td><td>Input chronological age</td></tr>
-<tr><td><code>proteomic_age</code></td><td>Predicted proteomic age</td></tr>
-<tr><td><code>age_acceleration</code></td><td>Age gap / residual age acceleration</td></tr>
-<tr><td><code>n_proteins_matched</code></td><td>Number of clock proteins found in the input</td></tr>
-<tr><td><code>n_proteins_missing</code></td><td>Number of clock proteins not found in the input</td></tr>
-<tr><td><code>match_by</code></td><td>Protein identifier convention used</td></tr>
-</tbody></table>
+<table><tr><th>Column</th><th>Meaning</th></tr><tr><td>`id`</td><td>Sample identifier</td></tr><tr><td>`chronological_age`</td><td>Input chronological age</td></tr><tr><td>`proteomic_age`</td><td>Predicted proteomic age</td></tr><tr><td>`age_acceleration`</td><td>Age gap / residual age acceleration</td></tr><tr><td>`n_proteins_matched`</td><td>Number of clock proteins found in the input</td></tr><tr><td>`n_proteins_missing`</td><td>Number of clock proteins not found in the input</td></tr><tr><td>`match_by`</td><td>Protein identifier convention used</td></tr></table></table>
 <p>In the current implementation, each individual clock&#x27;s <code>age_acceleration</code> is</p>
 <p>computed as the residual from:</p>
-<pre><code class="language-r">lm(proteomic_age ~ chronological_age)</code></pre>
+<pre><code>lm(proteomic_age ~ chronological_age)</code></pre>
 <p>Positive age acceleration means the sample is predicted to be proteomically</p>
 <p>older than expected for its chronological age in that dataset.</p>
 <h1>References</h1>
 <p>Tanaka T, et al. Plasma proteomic signature of age in healthy humans.</p>
-<p><em>Aging Cell</em>. 2018;17(5):e12799.</p>
+<p>*Aging Cell*. 2018;17(5):e12799.</p>
 <p>Lehallier B, et al. Undulating changes in human plasma proteome profiles</p>
-<p>across the lifespan. <em>Nature Medicine</em>. 2019;25(12):1843-1850.</p>
+<p>across the lifespan. *Nature Medicine*. 2019;25(12):1843-1850.</p>
 <p>Sathyan S, et al. Plasma proteomic profile of age, health span, and all-cause</p>
-<p>mortality in older adults. <em>Aging Cell</em>. 2020;19(11):e13250.</p>
+<p>mortality in older adults. *Aging Cell*. 2020;19(11):e13250.</p>
 <p>Oh HS, et al. Organ aging signatures in the plasma proteome track health and</p>
-<p>disease. <em>Nature</em>. 2023;624:164-172.</p>
+<p>disease. *Nature*. 2023;624:164-172.</p>
 <p>Wang S, et al. Development, characterization, and replication of proteomic aging</p>
-<p>clocks: analysis of 2 population-based cohorts. <em>PLOS Medicine</em>.</p>
+<p>clocks: analysis of 2 population-based cohorts. *PLOS Medicine*.</p>
 <p>2024;21(9):e1004464.</p>
 <p>Robinson O, et al. Associations of proteomic age clocks with lifestyle risk</p>
 <p>factors, incident chronic diseases and mortality in two European cohorts.</p>
-<p><em>Nature Aging</em>. 2026. doi:10.1038/s43587-026-01163-6.</p>
-<pre><code class="language-r">sessionInfo()</code></pre>
+<p>*Nature Aging*. 2026. doi:10.1038/s43587-026-01163-6.</p>
+<pre><code>sessionInfo()</code></pre>
 </body>
 </html>

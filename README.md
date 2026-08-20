@@ -15,7 +15,8 @@ remotes::install_github("EnricMartin/proteomicAge")
 ## Supported clocks
 
 `proteomicAge` currently provides five published conventional proteomic aging
-clocks plus the **Global proteomic age ensemble**.
+clocks, two Olink-based proteomic aging model families, plus the **Global
+proteomic age ensemble**.
 
 **Key feature:** `compute_global_age()` implements the **Global proteomic clock**
 from Robinson et al. (2026, Nature Aging), which averages proteomic ages and
@@ -33,6 +34,12 @@ matching `*_proteins()` function for listing the proteins used by that model.
 | Sathyan 2020 | `compute_sathyan2020_age()` | 162 | `uniprot` | natural log | Elastic net clock from LonGenity SOMAscan v4 data |
 | Oh 2023 conventional | `compute_oh2023_conventional_age()` | 4,778 | `seqid_dot` | natural log | 500-model bagged LASSO ensemble from the organ aging study |
 | Wang 2024 ARIC midlife | `compute_wang2024_aric_age()` | 788 | `seqid_dot` | `log2` | Elastic net clock trained in the ARIC midlife cohort |
+| Kuo 2024 PAC | `compute_kuo2024_pac_age()` | 128 Olink proteins + age | gene | none; Olink NPX expected | Mortality-calibrated PAC proteomic age |
+| Goeminne organAging | `compute_goeminne2025_organ_age()` | Organ-specific Olink models | gene | none; Olink NPX expected | Full Olink Explore 3072 chronological and mortality-based organ models |
+
+**License note:** Goeminne organAging coefficients are distributed by the source
+authors for academic/non-commercial use. See
+`inst/extdata/goeminne2025_organaging_LICENSE.txt`.
 
 ## Input format
 
@@ -140,6 +147,53 @@ wang_age <- compute_wang2024_aric_age(
 )
 ```
 
+## Olink-based clocks
+
+For Olink NPX data with protein columns named by gene symbols, run PAC:
+
+```r
+pac_age <- compute_kuo2024_pac_age(
+  dat,
+  id_col = "SampleID",
+  age_col = "Age"
+)
+
+head(pac_age)
+```
+
+Run Goeminne organ-aging models for all organs, or a selected organ:
+
+```r
+goeminne_age <- compute_goeminne2025_organ_age(
+  dat,
+  id_col = "SampleID",
+  age_col = "Age",
+  organs = "all",
+  model_type = "chronological",
+  fold = 1
+)
+
+goeminne_heart <- compute_goeminne2025_organ_age(
+  dat,
+  id_col = "SampleID",
+  age_col = "Age",
+  organs = "Heart"
+)
+```
+
+For Goeminne mortality-based models, the output is a relative mortality score,
+not an age in years:
+
+```r
+goeminne_mortality <- compute_goeminne2025_organ_age(
+  dat,
+  id_col = "SampleID",
+  age_col = "Age",
+  organs = c("Conventional", "Heart", "Brain"),
+  model_type = "mortality"
+)
+```
+
 List the proteins required by a clock:
 
 ```r
@@ -148,6 +202,8 @@ lehallier2019_proteins()
 sathyan2020_proteins()
 oh2023_conventional_proteins()
 wang2024_aric_proteins()
+kuo2024_pac_proteins()
+goeminne2025_organaging_proteins()
 ```
 
 Convert protein column names when needed:
@@ -159,6 +215,83 @@ dat_uniprot <- convert_format(
   id_col = "SampleID",
   age_col = "Age"
 )
+```
+
+## QC and visualization
+
+The package includes helper functions for reviewing clock outputs and comparing
+multiple clocks.
+
+Create a QC summary data frame from the Global Age output:
+
+```r
+qc <- summarize_clock_qc(global_age)
+qc
+```
+
+The QC summary has one row per clock and includes:
+
+| Column | Description |
+|--------|-------------|
+| `clock` | Clock name |
+| `n` | Number of complete samples |
+| `n_proteins_matched` | Number of clock proteins found, when available |
+| `n_proteins_missing` | Number of clock proteins missing, when available |
+| `agecor` | Correlation between omic age and chronological age |
+| `agecorp` | P-value for `agecor` |
+| `mean_chronological_age` | Mean chronological age |
+| `mean_omic_age` | Mean predicted omic age |
+| `mean_age_acceleration` | Mean age acceleration |
+
+Compute and plot a clock correlation matrix. Significant correlations are marked
+with asterisks in the plotted matrix.
+
+```r
+cormat <- clock_correlation_matrix(global_age, value = "age_acceleration")
+cormat$correlation
+cormat$p_adjusted
+
+plot_clock_correlation_matrix(global_age, value = "age_acceleration")
+```
+
+Visualize age prediction and age acceleration:
+
+```r
+plot_clock_scatter(global_age, value = "proteomic_age")
+plot_clock_scatter(global_age, value = "age_acceleration")
+```
+
+For datasets with study centers, ancestry groups, ethnicity groups, or
+case-control status, plot clock outputs by a user-selected categorical variable:
+
+```r
+sample_info <- data.frame(
+  id = global_age$id,
+  center = dat$Center
+)
+
+plot_clock_violin(
+  global_age,
+  group = "center",
+  sample_data = sample_info,
+  value = "age_acceleration"
+)
+```
+
+The same helpers also work with a manually assembled named list of individual
+clock outputs:
+
+```r
+clock_outputs <- list(
+  tanaka2018 = tanaka_age,
+  lehallier2019 = lehallier_age,
+  sathyan2020 = sathyan_age,
+  oh2023_conventional = oh_age,
+  wang2024_aric = wang_age
+)
+
+summarize_clock_qc(clock_outputs)
+plot_clock_correlation_matrix(clock_outputs)
 ```
 
 ## Output

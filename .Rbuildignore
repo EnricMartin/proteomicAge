@@ -4,3 +4,5 @@
 ^\.Rbuildignore$
 ^\.github$
 ^README\.Rmd$
+^R/\.Rhistory$
+^\.\.Rcheck$

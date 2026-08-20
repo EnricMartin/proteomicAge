@@ -5,6 +5,8 @@
 .sathyan2020_cache         <- new.env(parent = emptyenv())
 .oh2023_conventional_cache <- new.env(parent = emptyenv())
 .wang2024_aric_cache      <- new.env(parent = emptyenv())
+.kuo2024_pac_cache        <- new.env(parent = emptyenv())
+.goeminne2025_cache       <- new.env(parent = emptyenv())
 
 load_tanaka2018_coefs <- function() {
   if (is.null(.tanaka2018_cache$coefs)) {
@@ -154,6 +156,34 @@ load_wang2024_aric_coefs <- function() {
     }
     .wang2024_aric_cache$lookup_Weight <- stats::setNames(
       .wang2024_aric_cache$proteins$Weight, .wang2024_aric_cache$proteins$SOMAID)
+  }
+  invisible()
+}
+
+load_kuo2024_pac_coefs <- function() {
+  if (is.null(.kuo2024_pac_cache$coefs)) {
+    coef_path <- system.file("extdata", "kuo2024_pac_coefs.csv",
+                             package = "proteomicAge", mustWork = TRUE)
+    param_path <- system.file("extdata", "kuo2024_pac_params.csv",
+                              package = "proteomicAge", mustWork = TRUE)
+    coefs <- utils::read.csv(coef_path, stringsAsFactors = FALSE)
+    params <- utils::read.csv(param_path, stringsAsFactors = FALSE)
+    .kuo2024_pac_cache$coefs <- coefs
+    .kuo2024_pac_cache$params <- stats::setNames(params$value, params$parameter)
+    .kuo2024_pac_cache$proteins <- coefs$predictor[coefs$predictor != "age"]
+    .kuo2024_pac_cache$weights <- stats::setNames(coefs$weight, coefs$predictor)
+  }
+  invisible()
+}
+
+load_goeminne2025_coefs <- function() {
+  if (is.null(.goeminne2025_cache$coefs)) {
+    path <- system.file("extdata", "goeminne2025_organaging_coefs.csv",
+                        package = "proteomicAge", mustWork = TRUE)
+    coefs <- utils::read.csv(path, stringsAsFactors = FALSE)
+    .goeminne2025_cache$coefs <- coefs
+    .goeminne2025_cache$organs <- sort(unique(coefs$organ))
+    .goeminne2025_cache$proteins <- sort(unique(coefs$protein[coefs$protein != "Intercept"]))
   }
   invisible()
 }

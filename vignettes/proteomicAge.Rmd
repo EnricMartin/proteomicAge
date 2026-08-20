@@ -14,9 +14,10 @@ library(proteomicAge)
 
 # Overview
 
-`proteomicAge` computes biological age from SomaScan plasma proteomic data.
-Protein columns can be named as gene symbols, UniProt accessions, SomaScan
-SL IDs, or SomaScan dot-format SeqIds.
+`proteomicAge` computes biological age from plasma proteomic data. SomaScan
+clock protein columns can be named as gene symbols, UniProt accessions,
+SomaScan SL IDs, or SomaScan dot-format SeqIds. Olink-based clocks expect
+Olink NPX values with protein columns named by gene symbols.
 
 The package includes five conventional proteomic aging clocks:
 
@@ -27,6 +28,16 @@ The package includes five conventional proteomic aging clocks:
 | Sathyan 2020 | `compute_sathyan2020_age()` | UniProt, gene, SL ID, or SeqId |
 | Oh 2023 conventional | `compute_oh2023_conventional_age()` | SeqId recommended |
 | Wang 2024 ARIC midlife | `compute_wang2024_aric_age()` | SeqId recommended |
+
+The package also includes Olink-based models:
+
+| Clock | Function | Main input format |
+|---|---|---|
+| Kuo 2024 PAC | `compute_kuo2024_pac_age()` | Olink NPX, gene symbols |
+| Goeminne organAging | `compute_goeminne2025_organ_age()` | Olink NPX, gene symbols |
+
+Goeminne organAging coefficients are included for academic/non-commercial use
+under the source repository license.
 
 It also includes the **Global proteomic age ensemble**:
 
@@ -96,6 +107,64 @@ The result contains the Global proteomic age and the component clocks:
 | `*_age` | Component clock predicted age |
 | `*_age_acceleration` | Component clock age gap |
 
+# QC summaries and visualizations
+
+The package provides helper functions for QC and comparison of clock outputs.
+They can consume either:
+
+- the output from `compute_global_age()`, which already contains Global Age and
+  the five component clocks; or
+- a manually assembled named list of outputs from the individual
+  `compute_*_age()` functions.
+
+For a Global Age result:
+
+```r
+qc <- summarize_clock_qc(global_age)
+qc
+
+cormat <- clock_correlation_matrix(global_age, value = "age_acceleration")
+cormat$correlation
+cormat$p_adjusted
+
+plot_clock_correlation_matrix(global_age, value = "age_acceleration")
+plot_clock_scatter(global_age, value = "proteomic_age")
+plot_clock_scatter(global_age, value = "age_acceleration")
+```
+
+For individual clock outputs:
+
+```r
+clock_outputs <- list(
+  tanaka2018 = tanaka_age,
+  lehallier2019 = lehallier_age,
+  sathyan2020 = sathyan_age,
+  oh2023_conventional = oh_age,
+  wang2024_aric = wang_age
+)
+
+summarize_clock_qc(clock_outputs)
+plot_clock_correlation_matrix(clock_outputs)
+```
+
+For datasets with study centers, ancestry groups, ethnicity groups, or
+case-control status, `plot_clock_violin()` can stratify clock outputs by a
+user-selected categorical variable:
+
+```r
+sample_info <- data.frame(
+  id = global_age$id,
+  center = dat$Center
+)
+
+plot_clock_violin(
+  global_age,
+  group = "center",
+  sample_data = sample_info,
+  value = "age_acceleration"
+)
+```
+
 # Running individual clocks
 
 You can also run the clocks separately.
@@ -141,9 +210,48 @@ wang_age <- compute_wang2024_aric_age(
 )
 ```
 
+# Running Olink-based clocks
+
+PAC requires chronological age plus 128 Olink protein predictors:
+
+```r
+pac_age <- compute_kuo2024_pac_age(
+  dat,
+  id_col = "SampleID",
+  age_col = "Age"
+)
+```
+
+Goeminne organAging returns one row per sample and organ. Chronological models
+return organ-specific predicted ages and age accelerations:
+
+```r
+goeminne_age <- compute_goeminne2025_organ_age(
+  dat,
+  id_col = "SampleID",
+  age_col = "Age",
+  organs = c("Conventional", "Heart", "Brain"),
+  model_type = "chronological",
+  fold = 1
+)
+```
+
+Mortality-based Goeminne models return `mortality_score`, a relative
+log-mortality-hazard score, rather than age in years:
+
+```r
+goeminne_mortality <- compute_goeminne2025_organ_age(
+  dat,
+  id_col = "SampleID",
+  age_col = "Age",
+  organs = "Conventional",
+  model_type = "mortality"
+)
+```
+
 # Clock protein lists
 
-Each conventional clock has a helper that returns the model proteins.
+Each clock has a helper that returns the model proteins.
 
 ```{r}
 nrow(tanaka2018_proteins())
@@ -151,6 +259,8 @@ nrow(lehallier2019_proteins())
 nrow(sathyan2020_proteins())
 nrow(oh2023_conventional_proteins())
 nrow(wang2024_aric_proteins())
+nrow(kuo2024_pac_proteins())
+length(unique(goeminne2025_organaging_proteins()$protein))
 ```
 
 # Small executable example

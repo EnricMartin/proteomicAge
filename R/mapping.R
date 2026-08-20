@@ -40,7 +40,8 @@ detect_format <- function(colnames_vec) {
 #'
 #' @param data Data frame with protein columns
 #' @param target_format Target naming convention
-#' @param id_col, age_col Non-protein columns to preserve
+#' @param id_col Sample ID column name to preserve.
+#' @param age_col Chronological age column name to preserve.
 #' @return Data frame with renamed protein columns
 #' @export
 convert_format <- function(data,
