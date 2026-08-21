@@ -4,7 +4,13 @@
 \alias{compute_kuo2024_pac_age}
 \title{Compute PAC proteomic age via Kuo et al. (2024)}
 \usage{
-compute_kuo2024_pac_age(data, id_col = "SampleID", age_col = "Age")
+compute_kuo2024_pac_age(
+  data,
+  id_col = "SampleID",
+  age_col = "Age",
+  match_by = c("gene", "uniprot"),
+  protein_map = NULL
+)
 }
 \arguments{
 \item{data}{data.frame with Olink NPX protein columns plus age.}
@@ -12,6 +18,11 @@ compute_kuo2024_pac_age(data, id_col = "SampleID", age_col = "Age")
 \item{id_col}{Sample ID column name.}
 
 \item{age_col}{Chronological age column name.}
+
+\item{match_by}{Protein column naming convention: "gene" or "uniprot".}
+
+\item{protein_map}{Optional data.frame mapping gene/assay names to UniProt
+IDs. Required when `match_by = "uniprot"`.}
 }
 \value{
 data.frame with PAC proteomic age and age acceleration.

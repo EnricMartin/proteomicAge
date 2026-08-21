@@ -23,11 +23,17 @@ kuo2024_pac_proteins <- function() {
 #' @param data data.frame with Olink NPX protein columns plus age.
 #' @param id_col Sample ID column name.
 #' @param age_col Chronological age column name.
+#' @param match_by Protein column naming convention: "gene" or "uniprot".
+#' @param protein_map Optional data.frame mapping gene/assay names to UniProt
+#'   IDs. Required when `match_by = "uniprot"`.
 #' @return data.frame with PAC proteomic age and age acceleration.
 #' @export
 compute_kuo2024_pac_age <- function(data,
                                     id_col = "SampleID",
-                                    age_col = "Age") {
+                                    age_col = "Age",
+                                    match_by = c("gene", "uniprot"),
+                                    protein_map = NULL) {
+  match_by <- match.arg(match_by)
   if (!is.data.frame(data)) stop("'data' must be a data.frame")
   if (!id_col %in% names(data)) stop("id_col not found")
   if (!age_col %in% names(data)) stop("age_col not found")
@@ -35,7 +41,7 @@ compute_kuo2024_pac_age <- function(data,
   load_kuo2024_pac_coefs()
   predictors <- .kuo2024_pac_cache$coefs$predictor
   proteins <- .kuo2024_pac_cache$proteins
-  input_lookup <- .olink_gene_lookup(names(data), proteins)
+  input_lookup <- .olink_match_lookup(names(data), proteins, match_by, protein_map)
   missing <- setdiff(toupper(proteins), names(input_lookup))
   if (length(missing) > 0) {
     stop("Missing PAC predictors: ", paste(missing, collapse = ", "))
@@ -67,7 +73,7 @@ compute_kuo2024_pac_age <- function(data,
     age_acceleration = age_accel,
     n_proteins_matched = length(proteins),
     n_proteins_missing = 0L,
-    match_by = "gene",
+    match_by = match_by,
     clock = "Kuo2024_PAC",
     stringsAsFactors = FALSE
   )

@@ -140,7 +140,8 @@ wang_age &lt;- compute_wang2024_aric_age(
 <pre><code>pac_age &lt;- compute_kuo2024_pac_age(
   dat,
   id_col = &quot;SampleID&quot;,
-  age_col = &quot;Age&quot;
+  age_col = &quot;Age&quot;,
+  match_by = &quot;gene&quot;
 )</code></pre>
 <p>Goeminne organAging returns one row per sample and organ. Chronological models</p>
 <p>return organ-specific predicted ages and age accelerations:</p>
@@ -160,6 +161,26 @@ wang_age &lt;- compute_wang2024_aric_age(
   age_col = &quot;Age&quot;,
   organs = &quot;Conventional&quot;,
   model_type = &quot;mortality&quot;
+)</code></pre>
+<p>If an Olink matrix uses UniProt IDs as protein column names, build a map from</p>
+<p>the original long Olink table and pass it to the Olink clock functions:</p>
+<pre><code>protein_map &lt;- olink_protein_map_from_long(olink_long)
+
+pac_age &lt;- compute_kuo2024_pac_age(
+  olink_wide_uniprot,
+  id_col = &quot;SampleID&quot;,
+  age_col = &quot;Age&quot;,
+  match_by = &quot;uniprot&quot;,
+  protein_map = protein_map
+)
+
+goeminne_heart &lt;- compute_goeminne2025_organ_age(
+  olink_wide_uniprot,
+  id_col = &quot;SampleID&quot;,
+  age_col = &quot;Age&quot;,
+  organs = &quot;Heart&quot;,
+  match_by = &quot;uniprot&quot;,
+  protein_map = protein_map
 )</code></pre>
 <h1>Clock protein lists</h1>
 <p>Each clock has a helper that returns the model proteins.</p>

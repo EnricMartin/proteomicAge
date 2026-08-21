@@ -155,7 +155,8 @@ For Olink NPX data with protein columns named by gene symbols, run PAC:
 pac_age <- compute_kuo2024_pac_age(
   dat,
   id_col = "SampleID",
-  age_col = "Age"
+  age_col = "Age",
+  match_by = "gene"
 )
 
 head(pac_age)
@@ -194,6 +195,31 @@ goeminne_mortality <- compute_goeminne2025_organ_age(
 )
 ```
 
+If your Olink wide table uses UniProt IDs as protein column names, pass an
+Olink gene-UniProt map. For AIFI-style long Olink files, the map can be built
+directly from the original long table:
+
+```r
+protein_map <- olink_protein_map_from_long(olink_long)
+
+pac_age <- compute_kuo2024_pac_age(
+  olink_wide_uniprot,
+  id_col = "SampleID",
+  age_col = "Age",
+  match_by = "uniprot",
+  protein_map = protein_map
+)
+
+goeminne_age <- compute_goeminne2025_organ_age(
+  olink_wide_uniprot,
+  id_col = "SampleID",
+  age_col = "Age",
+  organs = "Heart",
+  match_by = "uniprot",
+  protein_map = protein_map
+)
+```
+
 List the proteins required by a clock:
 
 ```r
@@ -204,6 +230,7 @@ oh2023_conventional_proteins()
 wang2024_aric_proteins()
 kuo2024_pac_proteins()
 goeminne2025_organaging_proteins()
+olink_protein_map_from_long(olink_long)
 ```
 
 Convert protein column names when needed:
