@@ -80,6 +80,28 @@ test_that("compute_kuo2024_pac_age uses built-in Olink UniProt map", {
   expect_true(all(is.finite(result$proteomic_age)))
 })
 
+test_that("compute_kuo2024_pac_age auto-detects UniProt columns", {
+  protein_map <- olink_protein_map()
+  prots <- kuo2024_pac_proteins()
+  map <- protein_map[toupper(protein_map$gene) %in% toupper(prots$predictor), ]
+  map <- map[!duplicated(toupper(map$gene)), ]
+  demo <- data.frame(
+    SampleID = paste0("S", 1:4),
+    Age = c(45, 55, 65, 70),
+    stringsAsFactors = FALSE
+  )
+
+  set.seed(42)
+  for (uniprot in map$uniprot) {
+    demo[[uniprot]] <- stats::rnorm(4)
+  }
+
+  result <- compute_kuo2024_pac_age(demo)
+
+  expect_equal(result$n_proteins_matched, rep(128, 4))
+  expect_equal(result$match_by, rep("uniprot", 4))
+})
+
 test_that("goeminne2025_organaging_proteins exposes model coefficients", {
   prots <- goeminne2025_organaging_proteins()
 
@@ -187,6 +209,47 @@ test_that("compute_goeminne2025_organ_age uses built-in Olink UniProt map", {
   expect_equal(result$match_by, rep("uniprot", 4))
   expect_true(all(result$n_proteins_matched > 0))
   expect_true(all(is.finite(result$proteomic_age)))
+})
+
+test_that("compute_goeminne2025_organ_age auto-detects UniProt columns", {
+  protein_map <- olink_protein_map()
+  prots <- goeminne2025_organaging_proteins()
+  needed <- unique(prots$protein[prots$organ == "Heart" &
+                                  prots$model_type == "chronological" &
+                                  prots$fold == 1])
+  needed <- setdiff(needed, "Intercept")
+  map <- protein_map[toupper(protein_map$gene) %in% toupper(needed), ]
+  map <- map[!duplicated(toupper(map$gene)), ]
+  demo <- data.frame(
+    SampleID = paste0("S", 1:4),
+    Age = c(45, 55, 65, 70),
+    stringsAsFactors = FALSE
+  )
+
+  set.seed(42)
+  for (uniprot in map$uniprot) {
+    demo[[uniprot]] <- stats::rnorm(4)
+  }
+
+  result <- compute_goeminne2025_organ_age(demo, organs = "Heart")
+
+  expect_equal(nrow(result), 4)
+  expect_equal(result$match_by, rep("uniprot", 4))
+  expect_true(all(result$n_proteins_matched > 0))
+})
+
+test_that("compute_goeminne2025_organ_age stops when no proteins match", {
+  demo <- data.frame(
+    SampleID = paste0("S", 1:4),
+    Age = c(45, 55, 65, 70),
+    X1 = stats::rnorm(4),
+    stringsAsFactors = FALSE
+  )
+
+  expect_error(
+    compute_goeminne2025_organ_age(demo, organs = "Heart", match_by = "gene"),
+    "No proteins matched"
+  )
 })
 
 test_that("Olink gene matching accepts R-syntactic gene column names", {

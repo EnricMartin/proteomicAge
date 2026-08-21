@@ -11,7 +11,7 @@ compute_goeminne2025_organ_age(
   organs = "all",
   model_type = c("chronological", "mortality"),
   fold = 1,
-  match_by = c("gene", "uniprot"),
+  match_by = c("auto", "gene", "uniprot"),
   protein_map = NULL
 )
 }
@@ -28,7 +28,8 @@ compute_goeminne2025_organ_age(
 
 \item{fold}{Model fold to use; defaults to 1, as suggested by authors.}
 
-\item{match_by}{Protein column naming convention: "gene" or "uniprot".}
+\item{match_by}{Protein column naming convention: "auto", "gene", or
+"uniprot".}
 
 \item{protein_map}{Optional data.frame mapping gene/assay names to UniProt
 IDs. If NULL, the built-in Olink map is used.}

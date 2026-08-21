@@ -212,14 +212,14 @@ wang_age <- compute_wang2024_aric_age(
 
 # Running Olink-based clocks
 
-PAC requires chronological age plus 128 Olink protein predictors:
+PAC requires chronological age plus 128 Olink protein predictors. Protein
+columns can be gene symbols/Olink assay names or UniProt IDs:
 
 ```r
 pac_age <- compute_kuo2024_pac_age(
   dat,
   id_col = "SampleID",
-  age_col = "Age",
-  match_by = "gene"
+  age_col = "Age"
 )
 ```
 
@@ -250,24 +250,22 @@ goeminne_mortality <- compute_goeminne2025_organ_age(
 )
 ```
 
-If an Olink matrix uses UniProt IDs as protein column names, set
-`match_by = "uniprot"`. The package includes an Olink gene-UniProt map covering
-the built-in PAC and Goeminne models:
+If an Olink matrix uses UniProt IDs as protein column names, no manual mapping
+table is needed. The package auto-detects UniProt columns using the built-in
+Olink gene-UniProt map:
 
 ```r
 pac_age <- compute_kuo2024_pac_age(
   olink_wide_uniprot,
   id_col = "SampleID",
-  age_col = "Age",
-  match_by = "uniprot"
+  age_col = "Age"
 )
 
 goeminne_heart <- compute_goeminne2025_organ_age(
   olink_wide_uniprot,
   id_col = "SampleID",
   age_col = "Age",
-  organs = "Heart",
-  match_by = "uniprot"
+  organs = "Heart"
 )
 ```
 

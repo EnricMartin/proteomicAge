@@ -136,12 +136,12 @@ wang_age &lt;- compute_wang2024_aric_age(
   match_by = fmt
 )</code></pre>
 <h1>Running Olink-based clocks</h1>
-<p>PAC requires chronological age plus 128 Olink protein predictors:</p>
+<p>PAC requires chronological age plus 128 Olink protein predictors. Protein</p>
+<p>columns can be gene symbols/Olink assay names or UniProt IDs:</p>
 <pre><code>pac_age &lt;- compute_kuo2024_pac_age(
   dat,
   id_col = &quot;SampleID&quot;,
-  age_col = &quot;Age&quot;,
-  match_by = &quot;gene&quot;
+  age_col = &quot;Age&quot;
 )</code></pre>
 <p>Goeminne organAging returns one row per sample and organ. Chronological models</p>
 <p>return organ-specific predicted ages and age accelerations:</p>
@@ -162,22 +162,20 @@ wang_age &lt;- compute_wang2024_aric_age(
   organs = &quot;Conventional&quot;,
   model_type = &quot;mortality&quot;
 )</code></pre>
-<p>If an Olink matrix uses UniProt IDs as protein column names, set</p>
-<p><code>match_by = &quot;uniprot&quot;</code>. The package includes an Olink gene-UniProt map covering</p>
-<p>the built-in PAC and Goeminne models:</p>
+<p>If an Olink matrix uses UniProt IDs as protein column names, no manual mapping</p>
+<p>table is needed. The package auto-detects UniProt columns using the built-in</p>
+<p>Olink gene-UniProt map:</p>
 <pre><code>pac_age &lt;- compute_kuo2024_pac_age(
   olink_wide_uniprot,
   id_col = &quot;SampleID&quot;,
-  age_col = &quot;Age&quot;,
-  match_by = &quot;uniprot&quot;
+  age_col = &quot;Age&quot;
 )
 
 goeminne_heart &lt;- compute_goeminne2025_organ_age(
   olink_wide_uniprot,
   id_col = &quot;SampleID&quot;,
   age_col = &quot;Age&quot;,
-  organs = &quot;Heart&quot;,
-  match_by = &quot;uniprot&quot;
+  organs = &quot;Heart&quot;
 )</code></pre>
 <p>For custom Olink panels, <code>protein_map</code> can still be supplied manually or built</p>
 <p>from a long-format Olink table with <code>olink_protein_map_from_long()</code>.</p>

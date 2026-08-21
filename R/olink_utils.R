@@ -11,7 +11,23 @@
 }
 
 .olink_match_lookup <- function(columns, proteins, match_by, protein_map = NULL) {
-  if (match_by == "gene") return(.olink_gene_lookup(columns, proteins))
+  if (match_by == "auto") {
+    gene_lookup <- .olink_gene_lookup(columns, proteins)
+    uniprot_lookup <- .olink_match_lookup(columns, proteins, "uniprot", protein_map)
+    gene_hits <- sum(toupper(proteins) %in% names(gene_lookup))
+    uniprot_hits <- sum(toupper(proteins) %in% names(uniprot_lookup))
+    if (uniprot_hits > gene_hits) {
+      attr(uniprot_lookup, "match_by") <- "uniprot"
+      return(uniprot_lookup)
+    }
+    attr(gene_lookup, "match_by") <- "gene"
+    return(gene_lookup)
+  }
+  if (match_by == "gene") {
+    lookup <- .olink_gene_lookup(columns, proteins)
+    attr(lookup, "match_by") <- "gene"
+    return(lookup)
+  }
   if (is.null(protein_map)) {
     load_olink_protein_map()
     protein_map <- .olink_map_cache$map
@@ -21,7 +37,9 @@
   map <- map[toupper(map$gene) %in% toupper(proteins), ]
   input_lookup <- stats::setNames(columns, toupper(columns))
   matched_map <- map[toupper(map$uniprot) %in% names(input_lookup), ]
-  stats::setNames(input_lookup[toupper(matched_map$uniprot)], toupper(matched_map$gene))
+  lookup <- stats::setNames(input_lookup[toupper(matched_map$uniprot)], toupper(matched_map$gene))
+  attr(lookup, "match_by") <- "uniprot"
+  lookup
 }
 
 .olink_standardize_map <- function(protein_map) {

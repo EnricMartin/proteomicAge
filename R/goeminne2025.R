@@ -24,7 +24,8 @@ goeminne2025_organaging_proteins <- function() {
 #' @param organs Character vector of organs to compute, or "all".
 #' @param model_type "chronological" or "mortality".
 #' @param fold Model fold to use; defaults to 1, as suggested by authors.
-#' @param match_by Protein column naming convention: "gene" or "uniprot".
+#' @param match_by Protein column naming convention: "auto", "gene", or
+#'   "uniprot".
 #' @param protein_map Optional data.frame mapping gene/assay names to UniProt
 #'   IDs. If NULL, the built-in Olink map is used.
 #' @return Long data.frame with one row per sample and organ.
@@ -35,7 +36,7 @@ compute_goeminne2025_organ_age <- function(data,
                                            organs = "all",
                                            model_type = c("chronological", "mortality"),
                                            fold = 1,
-                                           match_by = c("gene", "uniprot"),
+                                           match_by = c("auto", "gene", "uniprot"),
                                            protein_map = NULL) {
   model_type <- match.arg(model_type)
   match_by <- match.arg(match_by)
@@ -66,8 +67,13 @@ compute_goeminne2025_organ_age <- function(data,
     input_lookup <- .olink_match_lookup(
       names(data), protein_coefs$protein, match_by, protein_map
     )
+    matched_by <- attr(input_lookup, "match_by")
     matched <- protein_coefs$protein[toupper(protein_coefs$protein) %in% names(input_lookup)]
     missing <- setdiff(protein_coefs$protein, matched)
+    if (length(matched) == 0) {
+      stop("No proteins matched for Goeminne organ model '", organs[[i]],
+           "'. Check Olink protein column names or set match_by explicitly.")
+    }
     score <- rep(intercept, nrow(data))
     for (protein in matched) {
       score <- score + as.numeric(data[[input_lookup[[toupper(protein)]]]]) *
@@ -83,7 +89,7 @@ compute_goeminne2025_organ_age <- function(data,
         mortality_score = NA_real_,
         n_proteins_matched = length(matched),
         n_proteins_missing = length(missing),
-        match_by = match_by,
+        match_by = matched_by,
         clock = "Goeminne2025_organAging",
         stringsAsFactors = FALSE
       )
@@ -97,7 +103,7 @@ compute_goeminne2025_organ_age <- function(data,
         mortality_score = score,
         n_proteins_matched = length(matched),
         n_proteins_missing = length(missing),
-        match_by = match_by,
+        match_by = matched_by,
         clock = "Goeminne2025_organAging_mortality",
         stringsAsFactors = FALSE
       )

@@ -8,7 +8,7 @@ compute_kuo2024_pac_age(
   data,
   id_col = "SampleID",
   age_col = "Age",
-  match_by = c("gene", "uniprot"),
+  match_by = c("auto", "gene", "uniprot"),
   protein_map = NULL
 )
 }
@@ -19,7 +19,8 @@ compute_kuo2024_pac_age(
 
 \item{age_col}{Chronological age column name.}
 
-\item{match_by}{Protein column naming convention: "gene" or "uniprot".}
+\item{match_by}{Protein column naming convention: "auto", "gene", or
+"uniprot".}
 
 \item{protein_map}{Optional data.frame mapping gene/assay names to UniProt
 IDs. If NULL, the built-in Olink map is used.}

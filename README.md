@@ -148,14 +148,14 @@ wang_age <- compute_wang2024_aric_age(
 
 ## Olink-based clocks
 
-For Olink NPX data with protein columns named by gene symbols, run PAC:
+For Olink NPX data with protein columns named by gene symbols or UniProt IDs,
+run PAC:
 
 ```r
 pac_age <- compute_kuo2024_pac_age(
   dat,
   id_col = "SampleID",
-  age_col = "Age",
-  match_by = "gene"
+  age_col = "Age"
 )
 
 head(pac_age)
@@ -194,24 +194,22 @@ goeminne_mortality <- compute_goeminne2025_organ_age(
 )
 ```
 
-If your Olink wide table uses UniProt IDs as protein column names, set
-`match_by = "uniprot"`. The package includes an Olink gene-UniProt map covering
-the built-in PAC and Goeminne models:
+If your Olink wide table uses UniProt IDs as protein column names, no manual
+mapping table is needed. The Olink functions auto-detect UniProt columns using
+the built-in Olink gene-UniProt map:
 
 ```r
 pac_age <- compute_kuo2024_pac_age(
   olink_wide_uniprot,
   id_col = "SampleID",
-  age_col = "Age",
-  match_by = "uniprot"
+  age_col = "Age"
 )
 
 goeminne_age <- compute_goeminne2025_organ_age(
   olink_wide_uniprot,
   id_col = "SampleID",
   age_col = "Age",
-  organs = "Heart",
-  match_by = "uniprot"
+  organs = "Heart"
 )
 ```
 
