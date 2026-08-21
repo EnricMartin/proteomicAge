@@ -24,6 +24,10 @@ remotes::install_github("EnricMartin/proteomicAge")
 | Kuo 2024 PAC | `compute_kuo2024_pac_age()` | 128 + age | Olink | No |
 | Goeminne organAging | `compute_goeminne2025_organ_age()` | Organ-specific | Olink | No |
 
+**Global proteomic age was developed from the Nature Aging study shown below.**
+
+[![Nature Aging article: Associations of proteomic age clocks with lifestyle risk factors, incident chronic diseases and mortality in two European cohorts](man/figures/nature-aging-global-age.png)](https://doi.org/10.1038/s43587-026-01163-6)
+
 The package does **not** transform protein abundances inside clock prediction
 functions. Please preprocess your protein matrix before calling a clock.
 `preprocess_somascan()` is provided for explicit SomaScan preprocessing.
