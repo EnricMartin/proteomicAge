@@ -62,11 +62,67 @@ test_that("clock summaries can consume compute_global_age output", {
     clock_a_age = c(59, 61, 63, 64),
     clock_b_age = c(61, 63, 63, 66),
     clock_a_age_acceleration = c(-1, -0.4, 0.1, 0.8),
-    clock_b_age_acceleration = c(-1, 0, 0.3, 1.2)
+    clock_b_age_acceleration = c(-1, 0, 0.3, 1.2),
+    n_proteins_matched = 30,
+    n_proteins_missing = 2,
+    clock_a_n_proteins_matched = 10,
+    clock_a_n_proteins_missing = 2,
+    clock_b_n_proteins_matched = 20,
+    clock_b_n_proteins_missing = 0
   )
 
   summary <- summarize_clock_qc(global)
 
   expect_true(all(c("global", "clock_a", "clock_b") %in% summary$clock))
   expect_equal(nrow(summary), 3)
+  expect_equal(summary$n_proteins_matched, c(10, 20, 30))
+  expect_equal(summary$n_proteins_missing, c(2, 0, 2))
+})
+
+test_that("plot_clock_violin returns a ggplot without fixed limits", {
+  skip_if_not_installed("ggplot2")
+  clock_outputs <- list(
+    clock_a = data.frame(
+      id = paste0("S", 1:6),
+      chronological_age = 50:55,
+      proteomic_age = c(40, 42, 45, 60, 75, 90),
+      age_acceleration = c(-5, -3, -1, 1, 3, 5)
+    )
+  )
+
+  p <- plot_clock_violin(
+    clock_outputs,
+    group = c("A", "A", "A", "B", "B", "B")
+  )
+
+  expect_s3_class(p, "ggplot")
+  expect_null(p$coordinates$limits$y)
+})
+
+test_that("compute outputs can return bundled QC and plots", {
+  skip_if_not_installed("ggplot2")
+  clock_outputs <- data.frame(
+    id = paste0("S", 1:6),
+    chronological_age = 50:55,
+    proteomic_age = c(40, 42, 45, 60, 75, 90),
+    age_acceleration = c(-5, -3, -1, 1, 3, 5),
+    n_proteins_matched = 3,
+    n_proteins_missing = 0,
+    clock = "demo"
+  )
+
+  bundle <- proteomicAge:::.clock_result_bundle(
+    clock_outputs,
+    group = c("A", "A", "A", "B", "B", "B"),
+    return_list = TRUE
+  )
+
+  expect_named(bundle, c(
+    "predictions", "qc", "scatter_plot", "group_plot",
+    "group_comparison", "group"
+  ))
+  expect_s3_class(bundle$scatter_plot, "ggplot")
+  expect_s3_class(bundle$group_plot, "ggplot")
+  expect_equal(bundle$qc$n_proteins_matched, 3)
+  expect_equal(bundle$group_comparison$test, "Two-tailed Welch t-test")
 })

@@ -4,39 +4,51 @@
 
 #' Preprocess SOMAscan proteomic data
 #'
-#' Performs standard preprocessing on SOMAscan RFU data:
-#' log2-transformation, outlier handling, and missing value reporting.
-#' Based on the preprocessing described in Tanaka et al. (2018):
-#' "Each protein was log-transformed, and outliers +/-4 SD were removed."
+#' Performs explicit preprocessing on SOMAscan RFU data. Clock computation
+#' functions do not transform protein values internally, so users should apply
+#' any required log or scaling step before prediction.
 #'
 #' @param data A data.frame of SOMAscan RFU values (samples x proteins).
 #'   Protein columns should be named with SOMAIDs (SeqIds, e.g. "SL003869").
 #' @param protein_cols Character vector of protein column names. If NULL
 #'   (default), all columns matching the SOMAID pattern (starting with "SL")
 #'   are treated as protein columns.
-#' @param log_transform Logical. If TRUE (default), log2-transform values.
+#' @param transform Protein transform to apply. Defaults to "none". Options are
+#'   "none", "log2", "log10", "log2_zscore", "log10_zscore",
+#'   "log10_zscore_clip", and "log10_zscore_remove".
+#' @param log_transform Deprecated compatibility option. If supplied, TRUE maps
+#'   to `transform = "log2"` and FALSE maps to `transform = "none"`.
 #' @param handle_outliers Logical. If TRUE (default), winsorize values
 #'   beyond 4 standard deviations from the mean.
 #' @param report_missingness Logical. If TRUE (default), print a summary
 #'   of missing values per protein.
 #'
-#' @return A data.frame with log-transformed (and optionally winsorized)
-#'   protein values. Non-protein columns are preserved.
+#' @return A data.frame with transformed protein values. Non-protein columns are
+#'   preserved.
 #' @export
 #'
 #' @examples
 #' \dontrun{
 #' raw <- read.csv("somascan_raw.csv")
-#' processed <- preprocess_somascan(raw)
+#' processed <- preprocess_somascan(raw, transform = "log2")
 #' }
 preprocess_somascan <- function(data,
                                  protein_cols = NULL,
-                                 log_transform = TRUE,
+                                 transform = c("none", "log2", "log10",
+                                               "log2_zscore", "log10_zscore",
+                                               "log10_zscore_clip",
+                                               "log10_zscore_remove"),
+                                 log_transform = NULL,
                                  handle_outliers = TRUE,
                                  report_missingness = TRUE) {
 
   if (!is.data.frame(data)) {
     stop("'data' must be a data.frame")
+  }
+  transform <- match.arg(transform)
+  if (!is.null(log_transform)) {
+    warning("log_transform is deprecated; use transform instead.")
+    transform <- if (isTRUE(log_transform)) "log2" else "none"
   }
 
   # Identify protein columns
@@ -55,19 +67,30 @@ preprocess_somascan <- function(data,
     stop("Protein columns not found: ", paste(missing_cols, collapse = ", "))
   }
 
-  # Log-transform
-  if (log_transform) {
+  if (transform != "none") {
     for (col in protein_cols) {
       vals <- data[[col]]
       if (is.numeric(vals)) {
-        # Handle zeros/negatives: set to NA before log
-        bad <- vals <= 0 & !is.na(vals)
-        if (any(bad)) {
-          warning("Found ", sum(bad), " non-positive values in '", col,
-                  "'. Setting to NA before log2 transform.")
-          vals[bad] <- NA_real_
+        if (grepl("^log", transform)) {
+          bad <- vals <= 0 & !is.na(vals)
+          if (any(bad)) {
+            warning("Found ", sum(bad), " non-positive values in '", col,
+                    "'. Setting to NA before ", transform, " transform.")
+            vals[bad] <- NA_real_
+          }
+          vals <- if (grepl("^log2", transform)) log2(vals) else log10(vals)
         }
-        data[[col]] <- log2(vals)
+        if (grepl("zscore", transform)) {
+          vals <- vals - mean(vals, na.rm = TRUE)
+          s <- stats::sd(vals, na.rm = TRUE)
+          if (!is.na(s) && s > 0) vals <- vals / s
+        }
+        if (identical(transform, "log10_zscore_clip")) {
+          vals <- pmin(pmax(vals, -5), 5)
+        } else if (identical(transform, "log10_zscore_remove")) {
+          vals[abs(vals) > 5] <- NA_real_
+        }
+        data[[col]] <- vals
       }
     }
   }

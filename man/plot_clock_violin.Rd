@@ -8,7 +8,8 @@ plot_clock_violin(
   clock_outputs,
   group,
   sample_data = NULL,
-  value = c("proteomic_age", "age_acceleration")
+  value = c("proteomic_age", "age_acceleration"),
+  ylim = NULL
 )
 }
 \arguments{
@@ -19,9 +20,13 @@ plot_clock_violin(
 \item{sample_data}{Optional data.frame containing the grouping column and IDs.}
 
 \item{value}{`"proteomic_age"` or `"age_acceleration"`.}
+
+\item{ylim}{Optional numeric vector of length 2 passed to `coord_cartesian()`
+when ggplot2 is available, or used as the base R y-axis range.}
 }
 \value{
-Invisibly returns the long-format data used for plotting.
+If ggplot2 is installed, invisibly returns the ggplot object.
+  Otherwise invisibly returns the long-format data used for plotting.
 }
 \description{
 Plot clock outputs by a categorical variable

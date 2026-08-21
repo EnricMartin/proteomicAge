@@ -1,6 +1,21 @@
-#' Convert clock outputs to long format
-#'
-#' @keywords internal
+if (getRversion() >= "2.15.1") {
+  utils::globalVariables(c("chronological_age", "group", "value_plot"))
+}
+
+# Convert clock outputs to long format.
+.clock_repeated_metric <- function(clock_outputs, column) {
+  if (column %in% names(clock_outputs)) {
+    return(clock_outputs[[column]])
+  }
+  rep(NA_integer_, nrow(clock_outputs))
+}
+
+.clock_metric_summary <- function(x) {
+  x <- x[!is.na(x)]
+  if (length(x) == 0) return(NA_real_)
+  max(x)
+}
+
 .clock_outputs_long <- function(clock_outputs) {
   if (is.data.frame(clock_outputs)) {
     required <- c("id", "chronological_age", "proteomic_age", "age_acceleration")
@@ -15,8 +30,8 @@
         clock = "global",
         proteomic_age = clock_outputs$proteomic_age,
         age_acceleration = clock_outputs$age_acceleration,
-        n_proteins_matched = NA_integer_,
-        n_proteins_missing = NA_integer_,
+        n_proteins_matched = .clock_repeated_metric(clock_outputs, "n_proteins_matched"),
+        n_proteins_missing = .clock_repeated_metric(clock_outputs, "n_proteins_missing"),
         stringsAsFactors = FALSE
       )
     )
@@ -33,8 +48,12 @@
         clock = clock,
         proteomic_age = clock_outputs[[age_col]],
         age_acceleration = clock_outputs[[gap_col]],
-        n_proteins_matched = NA_integer_,
-        n_proteins_missing = NA_integer_,
+        n_proteins_matched = .clock_repeated_metric(
+          clock_outputs, paste0(clock, "_n_proteins_matched")
+        ),
+        n_proteins_missing = .clock_repeated_metric(
+          clock_outputs, paste0(clock, "_n_proteins_missing")
+        ),
         stringsAsFactors = FALSE
       )
     }
@@ -106,8 +125,8 @@ summarize_clock_qc <- function(clock_outputs) {
     data.frame(
       clock = x$clock[1],
       n = sum(ok),
-      n_proteins_matched = suppressWarnings(max(x$n_proteins_matched, na.rm = TRUE)),
-      n_proteins_missing = suppressWarnings(max(x$n_proteins_missing, na.rm = TRUE)),
+      n_proteins_matched = .clock_metric_summary(x$n_proteins_matched),
+      n_proteins_missing = .clock_metric_summary(x$n_proteins_missing),
       agecor = agecor,
       agecorp = agecorp,
       mean_chronological_age = mean(x$chronological_age, na.rm = TRUE),
@@ -117,8 +136,6 @@ summarize_clock_qc <- function(clock_outputs) {
     )
   })
   out <- do.call(rbind, rows)
-  out$n_proteins_matched[is.infinite(out$n_proteins_matched)] <- NA
-  out$n_proteins_missing[is.infinite(out$n_proteins_missing)] <- NA
   rownames(out) <- NULL
   out
 }
@@ -220,13 +237,20 @@ plot_clock_scatter <- function(clock_outputs,
 #' @param group A grouping vector, or a column name in `sample_data`.
 #' @param sample_data Optional data.frame containing the grouping column and IDs.
 #' @param value `"proteomic_age"` or `"age_acceleration"`.
-#' @return Invisibly returns the long-format data used for plotting.
+#' @param ylim Optional numeric vector of length 2 passed to `coord_cartesian()`
+#'   when ggplot2 is available, or used as the base R y-axis range.
+#' @return If ggplot2 is installed, invisibly returns the ggplot object.
+#'   Otherwise invisibly returns the long-format data used for plotting.
 #' @export
 plot_clock_violin <- function(clock_outputs,
                               group,
                               sample_data = NULL,
-                              value = c("proteomic_age", "age_acceleration")) {
+                              value = c("proteomic_age", "age_acceleration"),
+                              ylim = NULL) {
   value <- match.arg(value)
+  if (!is.null(ylim) && (!is.numeric(ylim) || length(ylim) != 2)) {
+    stop("ylim must be NULL or a numeric vector of length 2")
+  }
   long <- .clock_outputs_long(clock_outputs)
   group_values <- if (length(group) == 1 && is.character(group) && is.data.frame(sample_data)) {
     sample_data[[group]][match(long$id, sample_data$id)]
@@ -234,6 +258,21 @@ plot_clock_violin <- function(clock_outputs,
     rep(group, length.out = length(unique(long$id)))[match(long$id, unique(long$id))]
   }
   long$group <- as.factor(group_values)
+  if (requireNamespace("ggplot2", quietly = TRUE)) {
+    long$value_plot <- long[[value]]
+    p <- ggplot2::ggplot(long, ggplot2::aes(x = group, y = value_plot)) +
+      ggplot2::geom_violin(trim = FALSE, fill = "#9ECAE1", color = "#2F6F9F", na.rm = TRUE) +
+      ggplot2::geom_jitter(width = 0.12, height = 0, size = 0.9, alpha = 0.35, na.rm = TRUE) +
+      ggplot2::facet_wrap(stats::as.formula("~ clock"), scales = if (is.null(ylim)) "free_y" else "fixed") +
+      ggplot2::labs(x = NULL, y = value) +
+      ggplot2::theme_bw()
+    if (!is.null(ylim)) {
+      p <- p + ggplot2::coord_cartesian(ylim = ylim)
+    }
+    print(p)
+    return(invisible(p))
+  }
+
   clocks <- unique(long$clock)
   op <- graphics::par(no.readonly = TRUE)
   on.exit(graphics::par(op), add = TRUE)
@@ -241,7 +280,10 @@ plot_clock_violin <- function(clock_outputs,
   for (clock in clocks) {
     x <- long[long$clock == clock, ]
     groups <- levels(x$group)
-    y_range <- range(x[[value]], na.rm = TRUE)
+    y_range <- if (is.null(ylim)) range(x[[value]], na.rm = TRUE) else ylim
+    if (is.null(ylim) && all(is.finite(y_range)) && diff(y_range) > 0) {
+      y_range <- y_range + c(-1, 1) * diff(y_range) * 0.04
+    }
     graphics::plot(seq_along(groups), rep(NA_real_, length(groups)), ylim = y_range,
                    xaxt = "n", xlab = "", ylab = value, main = clock)
     graphics::axis(1, at = seq_along(groups), labels = groups)

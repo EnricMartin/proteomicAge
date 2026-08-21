@@ -10,7 +10,10 @@ compute_global_age(
   age_col = "Age",
   sex_col = NULL,
   male_value = 0,
-  match_by = c("seqid_dot", "uniprot", "gene", "seqid_sl")
+  match_by = c("seqid_dot", "uniprot", "gene", "seqid_sl"),
+  group = NULL,
+  sample_data = NULL,
+  return_list = !is.null(group)
 )
 }
 \arguments{
@@ -27,6 +30,13 @@ otherwise "Sex" when present.}
 
 \item{match_by}{How to match proteins: "seqid_dot" (default), "uniprot",
 "gene", or "seqid_sl".}
+
+\item{group}{Optional grouping vector or column name for bundled QC plots.}
+
+\item{sample_data}{Optional data.frame containing group metadata and IDs.}
+
+\item{return_list}{If TRUE, return predictions, QC, plots, and group comparison
+as a list. This is automatically enabled when `group` is supplied.}
 }
 \value{
 data.frame with global proteomic_age, age_acceleration, and component

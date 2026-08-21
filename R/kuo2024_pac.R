@@ -27,13 +27,20 @@ kuo2024_pac_proteins <- function() {
 #'   "uniprot".
 #' @param protein_map Optional data.frame mapping gene/assay names to UniProt
 #'   IDs. If NULL, the built-in Olink map is used.
+#' @param group Optional grouping vector or column name for bundled QC plots.
+#' @param sample_data Optional data.frame containing group metadata and IDs.
+#' @param return_list If TRUE, return predictions, QC, plots, and group comparison
+#'   as a list. This is automatically enabled when `group` is supplied.
 #' @return data.frame with PAC proteomic age and age acceleration.
 #' @export
 compute_kuo2024_pac_age <- function(data,
                                     id_col = "SampleID",
                                     age_col = "Age",
                                     match_by = c("auto", "gene", "uniprot"),
-                                    protein_map = NULL) {
+                                    protein_map = NULL,
+                                    group = NULL,
+                                    sample_data = NULL,
+                                    return_list = !is.null(group)) {
   match_by <- match.arg(match_by)
   if (!is.data.frame(data)) stop("'data' must be a data.frame")
   if (!id_col %in% names(data)) stop("id_col not found")
@@ -68,7 +75,7 @@ compute_kuo2024_pac_age <- function(data,
           (params[["rate0"]] * (1 - exp(10 * params[["shape0"]]))))
   age_accel <- as.numeric(stats::residuals(stats::lm(prot_age ~ chron_age)))
 
-  data.frame(
+  result <- data.frame(
     id = data[[id_col]],
     chronological_age = chron_age,
     proteomic_age = prot_age,
@@ -78,5 +85,8 @@ compute_kuo2024_pac_age <- function(data,
     match_by = matched_by,
     clock = "Kuo2024_PAC",
     stringsAsFactors = FALSE
+  )
+  .clock_result_bundle(
+    result, group, sample_data, data, id_col, return_list, "Kuo2024_PAC"
   )
 }

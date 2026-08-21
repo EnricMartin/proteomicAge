@@ -9,7 +9,10 @@ compute_sathyan2020_age(
   id_col = "SampleID",
   age_col = "Age",
   sex_col = "Sex",
-  match_by = c("uniprot", "gene", "seqid_sl", "seqid_dot")
+  match_by = c("uniprot", "gene", "seqid_sl", "seqid_dot"),
+  group = NULL,
+  sample_data = NULL,
+  return_list = !is.null(group)
 )
 }
 \arguments{
@@ -22,6 +25,13 @@ compute_sathyan2020_age(
 \item{sex_col}{Sex column name.}
 
 \item{match_by}{How to match: "uniprot" (default), "gene", "seqid_sl", "seqid_dot".}
+
+\item{group}{Optional grouping vector or column name for bundled QC plots.}
+
+\item{sample_data}{Optional data.frame containing group metadata and IDs.}
+
+\item{return_list}{If TRUE, return predictions, QC, plots, and group comparison
+as a list. This is automatically enabled when `group` is supplied.}
 }
 \value{
 data.frame with proteomic_age, age_acceleration

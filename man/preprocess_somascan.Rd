@@ -7,7 +7,9 @@
 preprocess_somascan(
   data,
   protein_cols = NULL,
-  log_transform = TRUE,
+  transform = c("none", "log2", "log10", "log2_zscore", "log10_zscore",
+    "log10_zscore_clip", "log10_zscore_remove"),
+  log_transform = NULL,
   handle_outliers = TRUE,
   report_missingness = TRUE
 )
@@ -20,7 +22,12 @@ Protein columns should be named with SOMAIDs (SeqIds, e.g. "SL003869").}
 (default), all columns matching the SOMAID pattern (starting with "SL")
 are treated as protein columns.}
 
-\item{log_transform}{Logical. If TRUE (default), log2-transform values.}
+\item{transform}{Protein transform to apply. Defaults to "none". Options are
+"none", "log2", "log10", "log2_zscore", "log10_zscore",
+"log10_zscore_clip", and "log10_zscore_remove".}
+
+\item{log_transform}{Deprecated compatibility option. If supplied, TRUE maps
+to `transform = "log2"` and FALSE maps to `transform = "none"`.}
 
 \item{handle_outliers}{Logical. If TRUE (default), winsorize values
 beyond 4 standard deviations from the mean.}
@@ -29,18 +36,17 @@ beyond 4 standard deviations from the mean.}
 of missing values per protein.}
 }
 \value{
-A data.frame with log-transformed (and optionally winsorized)
-  protein values. Non-protein columns are preserved.
+A data.frame with transformed protein values. Non-protein columns are
+  preserved.
 }
 \description{
-Performs standard preprocessing on SOMAscan RFU data:
-log2-transformation, outlier handling, and missing value reporting.
-Based on the preprocessing described in Tanaka et al. (2018):
-"Each protein was log-transformed, and outliers +/-4 SD were removed."
+Performs explicit preprocessing on SOMAscan RFU data. Clock computation
+functions do not transform protein values internally, so users should apply
+any required log or scaling step before prediction.
 }
 \examples{
 \dontrun{
 raw <- read.csv("somascan_raw.csv")
-processed <- preprocess_somascan(raw)
+processed <- preprocess_somascan(raw, transform = "log2")
 }
 }

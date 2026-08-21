@@ -39,6 +39,13 @@ test_that("compute_global_age combines five conventional clocks", {
     "lehallier2019_age",
     "sathyan2020_age",
     "oh2023_conventional_age",
-    "wang2024_aric_age"
+    "wang2024_aric_age",
+    "tanaka2018_n_proteins_matched",
+    "lehallier2019_n_proteins_matched",
+    "sathyan2020_n_proteins_matched",
+    "oh2023_conventional_n_proteins_matched",
+    "wang2024_aric_n_proteins_matched"
   ) %in% names(result)))
+  expect_true(all(result$n_proteins_matched > 0))
+  expect_true(all(result$n_proteins_missing >= 0))
 })

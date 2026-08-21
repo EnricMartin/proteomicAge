@@ -19,16 +19,21 @@ tanaka2018_proteins <- function() {
 #'   Protein columns can use gene symbols, seq.xxx.xx, SLxxxxxx, or UniProt.
 #' @param id_col Sample ID column name.
 #' @param age_col Chronological age column name.
-#' @param log_transform Apply log2 transform (default TRUE).
 #' @param match_by How to match user columns to clock proteins:
 #'   \code{"uniprot"} (default), \code{"gene"}, \code{"seqid_sl"}, \code{"seqid_dot"}.
+#' @param group Optional grouping vector or column name for bundled QC plots.
+#' @param sample_data Optional data.frame containing group metadata and IDs.
+#' @param return_list If TRUE, return predictions, QC, plots, and group comparison
+#'   as a list. This is automatically enabled when `group` is supplied.
 #' @return data.frame with proteomic_age, age_acceleration, etc.
 #' @export
 compute_tanaka2018_age <- function(data,
                                     id_col = "SampleID",
                                     age_col = "Age",
-                                    log_transform = TRUE,
-                                    match_by = c("uniprot", "gene", "seqid_sl", "seqid_dot")) {
+                                    match_by = c("uniprot", "gene", "seqid_sl", "seqid_dot"),
+                                    group = NULL,
+                                    sample_data = NULL,
+                                    return_list = !is.null(group)) {
 
   match_by <- match.arg(match_by)
   if (!is.data.frame(data)) stop("'data' must be a data.frame")
@@ -62,11 +67,6 @@ compute_tanaka2018_age <- function(data,
     for (col in matched) {
       val <- row[[col]]
       if (!is.na(val) && is.numeric(val)) {
-        if (log_transform && val > 0) {
-          val <- log2(val)
-        } else if (log_transform && val <= 0) {
-          next
-        }
         sid <- lookup[col]
         pred <- pred + weight_lk[sid] * val
       }
@@ -77,7 +77,7 @@ compute_tanaka2018_age <- function(data,
   fit <- stats::lm(prot_age ~ chron_age)
   age_accel <- as.numeric(stats::residuals(fit))
 
-  data.frame(
+  result <- data.frame(
     id                = ids,
     chronological_age = chron_age,
     proteomic_age     = prot_age,
@@ -86,5 +86,8 @@ compute_tanaka2018_age <- function(data,
     n_proteins_missing = length(unmatched),
     match_by          = match_by,
     stringsAsFactors   = FALSE
+  )
+  .clock_result_bundle(
+    result, group, sample_data, data, id_col, return_list, "tanaka2018"
   )
 }

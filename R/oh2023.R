@@ -24,13 +24,20 @@ oh2023_conventional_proteins <- function() {
 #' @param age_col Chronological age column name.
 #' @param sex_col Optional sex column name used if present.
 #' @param match_by How to match: "seqid_dot" (default), "uniprot", "gene", "seqid_sl".
+#' @param group Optional grouping vector or column name for bundled QC plots.
+#' @param sample_data Optional data.frame containing group metadata and IDs.
+#' @param return_list If TRUE, return predictions, QC, plots, and group comparison
+#'   as a list. This is automatically enabled when `group` is supplied.
 #' @return data.frame with proteomic_age, age_acceleration
 #' @export
 compute_oh2023_conventional_age <- function(data,
                                              id_col = "SampleID",
                                              age_col = "Age",
                                              sex_col = "Sex_F",
-                                             match_by = c("seqid_dot", "uniprot", "gene", "seqid_sl")) {
+                                             match_by = c("seqid_dot", "uniprot", "gene", "seqid_sl"),
+                                             group = NULL,
+                                             sample_data = NULL,
+                                             return_list = !is.null(group)) {
 
   match_by <- match.arg(match_by)
   if (!is.data.frame(data)) stop("'data' must be a data.frame")
@@ -66,7 +73,7 @@ compute_oh2023_conventional_age <- function(data,
     row <- data[i, ]
     vals <- vapply(matched, function(col) {
       val <- row[[col]]
-      if (!is.na(val) && is.numeric(val) && val > 0) log(val) else NA_real_
+      if (!is.na(val) && is.numeric(val)) val else NA_real_
     }, numeric(1))
     ok <- !is.na(vals)
     if (any(ok)) {
@@ -78,7 +85,7 @@ compute_oh2023_conventional_age <- function(data,
   fit <- stats::lm(prot_age ~ chron_age)
   age_accel <- as.numeric(stats::residuals(fit))
 
-  data.frame(
+  result <- data.frame(
     id = ids,
     chronological_age = chron_age,
     proteomic_age = prot_age,
@@ -87,5 +94,9 @@ compute_oh2023_conventional_age <- function(data,
     n_proteins_missing = length(unmatched),
     match_by = match_by,
     stringsAsFactors = FALSE
+  )
+  .clock_result_bundle(
+    result, group, sample_data, data, id_col, return_list,
+    "oh2023_conventional"
   )
 }

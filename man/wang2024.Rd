@@ -10,7 +10,7 @@ cohorts. PLOS Medicine. 2024;21(9):e1004464.
 doi: 10.1371/journal.pmed.1004464
 }
 \details{
-Elastic net (alpha=0.5, 10-fold CV), log2 transform.
+Elastic net (alpha=0.5, 10-fold CV).
 4,955 SOMAscan v4 aptamers → 788 selected.
 Midlife: 11,761 participants aged 46-70 (ARIC Visit 2, 1990-92).
 }

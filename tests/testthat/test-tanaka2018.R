@@ -112,7 +112,11 @@ test_that("preprocess_somascan detects SOMAID columns", {
   )
   
   expect_message(
-    result <- preprocess_somascan(demo, report_missingness = FALSE),
+    result <- preprocess_somascan(
+      demo,
+      transform = "log2",
+      report_missingness = FALSE
+    ),
     "Auto-detected 2 protein columns"
   )
   
@@ -125,13 +129,67 @@ test_that("preprocess_somascan detects SOMAID columns", {
   expect_equal(result$SL003869, log2(c(1000, 2000, 3000, 4000, 5000)))
 })
 
+test_that("preprocess_somascan leaves protein values unchanged by default", {
+  demo <- data.frame(
+    SampleID = 1:3,
+    SL003869 = c(1000, 2000, 4000)
+  )
+
+  result <- preprocess_somascan(demo, report_missingness = FALSE)
+
+  expect_equal(result$SL003869, demo$SL003869)
+})
+
+test_that("preprocess_somascan applies explicit log2 transform", {
+  demo <- data.frame(
+    SampleID = 1:3,
+    SL003869 = c(1000, 2000, 4000)
+  )
+
+  result <- preprocess_somascan(
+    demo,
+    transform = "log2",
+    report_missingness = FALSE
+  )
+
+  expect_equal(result$SL003869, log2(demo$SL003869))
+})
+
+test_that("compute_tanaka2018_age does not transform protein values internally", {
+  prots <- tanaka2018_proteins()
+  demo <- data.frame(
+    SampleID = "S1",
+    Age = 50,
+    stringsAsFactors = FALSE
+  )
+  for (sid in prots$SOMAID) {
+    demo[[sid]] <- 8
+  }
+
+  result_raw <- suppressWarnings(compute_tanaka2018_age(
+    demo,
+    match_by = "seqid_sl"
+  ))
+  demo_logged <- demo
+  demo_logged[prots$SOMAID] <- lapply(demo_logged[prots$SOMAID], log2)
+  result_logged <- suppressWarnings(compute_tanaka2018_age(
+    demo_logged,
+    match_by = "seqid_sl"
+  ))
+
+  expect_false(isTRUE(all.equal(
+    result_raw$proteomic_age,
+    result_logged$proteomic_age
+  )))
+})
+
 test_that("preprocess_somascan handles outliers", {
   set.seed(123)
   vals <- c(rnorm(98, mean = 10, sd = 1), 50, -20)  # two extreme outliers
   demo <- data.frame(SampleID = 1:100, SL003869 = vals)
   
-  result <- preprocess_somascan(demo, 
-    log_transform = FALSE, 
+  result <- preprocess_somascan(demo,
+    transform = "none",
     handle_outliers = TRUE,
     report_missingness = FALSE
   )

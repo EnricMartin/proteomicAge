@@ -21,6 +21,10 @@ lehallier2019_proteins <- function() {
 #' @param male_value Value coding for male.
 #' @param match_by How to match: \code{"uniprot"} (default), \code{"gene"},
 #'   \code{"seqid_sl"}, \code{"seqid_dot"}.
+#' @param group Optional grouping vector or column name for bundled QC plots.
+#' @param sample_data Optional data.frame containing group metadata and IDs.
+#' @param return_list If TRUE, return predictions, QC, plots, and group comparison
+#'   as a list. This is automatically enabled when `group` is supplied.
 #' @return data.frame with proteomic_age, age_acceleration
 #' @export
 compute_lehallier2019_age <- function(data,
@@ -28,7 +32,10 @@ compute_lehallier2019_age <- function(data,
                                        age_col = "Age",
                                        sex_col = "Sex",
                                        male_value = 0,
-                                       match_by = c("uniprot", "gene", "seqid_sl", "seqid_dot")) {
+                                       match_by = c("uniprot", "gene", "seqid_sl", "seqid_dot"),
+                                       group = NULL,
+                                       sample_data = NULL,
+                                       return_list = !is.null(group)) {
 
   match_by <- match.arg(match_by)
   if (!is.data.frame(data)) stop("'data' must be a data.frame")
@@ -67,8 +74,7 @@ compute_lehallier2019_age <- function(data,
     row <- data[i, ]
     for (col in matched) {
       val <- row[[col]]
-      if (!is.na(val) && is.numeric(val) && val > 0) {
-        val <- log10(val)
+      if (!is.na(val) && is.numeric(val)) {
         sid <- lookup[col]
         pred <- pred + weight_lk[sid] * val
       }
@@ -79,7 +85,7 @@ compute_lehallier2019_age <- function(data,
   fit <- stats::lm(prot_age ~ chron_age)
   age_accel <- as.numeric(stats::residuals(fit))
 
-  data.frame(
+  result <- data.frame(
     id = ids,
     chronological_age = chron_age,
     proteomic_age = prot_age,
@@ -88,5 +94,8 @@ compute_lehallier2019_age <- function(data,
     n_proteins_missing = length(unmatched),
     match_by = match_by,
     stringsAsFactors = FALSE
+  )
+  .clock_result_bundle(
+    result, group, sample_data, data, id_col, return_list, "lehallier2019"
   )
 }

@@ -8,8 +8,10 @@ compute_tanaka2018_age(
   data,
   id_col = "SampleID",
   age_col = "Age",
-  log_transform = TRUE,
-  match_by = c("uniprot", "gene", "seqid_sl", "seqid_dot")
+  match_by = c("uniprot", "gene", "seqid_sl", "seqid_dot"),
+  group = NULL,
+  sample_data = NULL,
+  return_list = !is.null(group)
 )
 }
 \arguments{
@@ -20,10 +22,15 @@ Protein columns can use gene symbols, seq.xxx.xx, SLxxxxxx, or UniProt.}
 
 \item{age_col}{Chronological age column name.}
 
-\item{log_transform}{Apply log2 transform (default TRUE).}
-
 \item{match_by}{How to match user columns to clock proteins:
 \code{"uniprot"} (default), \code{"gene"}, \code{"seqid_sl"}, \code{"seqid_dot"}.}
+
+\item{group}{Optional grouping vector or column name for bundled QC plots.}
+
+\item{sample_data}{Optional data.frame containing group metadata and IDs.}
+
+\item{return_list}{If TRUE, return predictions, QC, plots, and group comparison
+as a list. This is automatically enabled when `group` is supplied.}
 }
 \value{
 data.frame with proteomic_age, age_acceleration, etc.

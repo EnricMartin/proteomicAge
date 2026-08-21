@@ -9,7 +9,10 @@ compute_kuo2024_pac_age(
   id_col = "SampleID",
   age_col = "Age",
   match_by = c("auto", "gene", "uniprot"),
-  protein_map = NULL
+  protein_map = NULL,
+  group = NULL,
+  sample_data = NULL,
+  return_list = !is.null(group)
 )
 }
 \arguments{
@@ -24,6 +27,13 @@ compute_kuo2024_pac_age(
 
 \item{protein_map}{Optional data.frame mapping gene/assay names to UniProt
 IDs. If NULL, the built-in Olink map is used.}
+
+\item{group}{Optional grouping vector or column name for bundled QC plots.}
+
+\item{sample_data}{Optional data.frame containing group metadata and IDs.}
+
+\item{return_list}{If TRUE, return predictions, QC, plots, and group comparison
+as a list. This is automatically enabled when `group` is supplied.}
 }
 \value{
 data.frame with PAC proteomic age and age acceleration.
