@@ -49,6 +49,8 @@ compute_sathyan2020_age <- function(data,
   lk_name <- paste0("lookup_", match_by)
   lookup <- .sathyan2020_cache[[lk_name]]
   weight_lk <- .sathyan2020_cache$lookup_Weight
+  weight_sums <- tapply(weight_lk, names(weight_lk), sum)
+  weight_sum_lk <- stats::setNames(as.numeric(weight_sums), names(weight_sums))
   intercept <- .sathyan2020_cache$intercept
 
   if (is.null(lookup) || length(lookup) == 0) {
@@ -79,7 +81,7 @@ compute_sathyan2020_age <- function(data,
       val <- row[[col]]
       if (!is.na(val) && is.numeric(val)) {
         sid <- lookup[col]
-        pred <- pred + weight_lk[sid] * val
+        pred <- pred + weight_sum_lk[sid] * val
       }
     }
     prot_age[i] <- pred
