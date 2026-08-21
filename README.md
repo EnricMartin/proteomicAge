@@ -17,8 +17,8 @@ remotes::install_github("EnricMartin/proteomicAge")
 |-------|----------|----------|----------|--------------|
 | **Global proteomic age** | `compute_global_age()` | Ensemble of five clocks | SomaScan | Yes, recommended |
 | Tanaka 2018 | `compute_tanaka2018_age()` | 76 | SomaScan | No |
-| Lehallier 2019 | `compute_lehallier2019_age()` | 373 | SomaScan | **Yes** |
-| Sathyan 2020 | `compute_sathyan2020_age()` | 162 | SomaScan | **Yes** |
+| Lehallier 2019 | `compute_lehallier2019_age()` | 373 | SomaScan | No |
+| Sathyan 2020 | `compute_sathyan2020_age()` | 162 | SomaScan | No |
 | Oh 2023 conventional | `compute_oh2023_conventional_age()` | 4,778 | SomaScan | **Yes** |
 | Wang 2024 ARIC midlife | `compute_wang2024_aric_age()` | 788 | SomaScan | No |
 | Kuo 2024 PAC | `compute_kuo2024_pac_age()` | 128 + age | Olink | No |
@@ -38,7 +38,7 @@ and one column per protein.
 |--------|----------|-------------|---------|
 | Sample ID | Yes | Unique sample identifier; name is set with `id_col` | `"P001"` |
 | Age | Yes | Chronological age in years; name is set with `age_col` | `50` |
-| Sex | Clock-dependent | Required or strongly recommended for Lehallier, Sathyan, Oh, and Global Age | `0`, `1`, `"Male"`, `"Female"` |
+| Sex | Clock-dependent | Required for Oh; strongly recommended for Global Age because it includes Oh | `0`, `1`, `"Male"`, `"Female"` |
 | Group | Optional | Grouping variable for QC, scatter, and violin outputs | `"Male"`, `"Female"` |
 | Protein columns | Yes | Protein abundances named with one supported convention | `GDF15`, `P15692`, `seq.11104.13.3` |
 

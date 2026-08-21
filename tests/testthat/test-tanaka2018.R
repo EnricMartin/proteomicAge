@@ -5,9 +5,9 @@ test_that("tanaka2018_proteins returns correct structure", {
   expect_true(all(c("SOMAID", "Gene", "UniProt", "Weight", "seqid_sl", "seqid_dot") %in% names(prots)))
   expect_equal(nrow(prots), 76)
   
-  # Check intercept exists in cache
-  load_tanaka2018_coefs()  # ensure loaded
-  expect_true(.tanaka2018_cache$intercept > 80)
+  # Check intercept exists in the package cache.
+  proteomicAge:::load_tanaka2018_coefs()
+  expect_true(proteomicAge:::.tanaka2018_cache$intercept > 80)
 })
 
 test_that("compute_tanaka2018_age rejects invalid input", {
@@ -59,6 +59,25 @@ test_that("compute_tanaka2018_age works with demo data", {
   
   # Age acceleration is the residual from proteomic_age ~ chronological_age.
   expect_equal(mean(result$age_acceleration), 0, tolerance = 1e-8)
+})
+
+test_that("compute_tanaka2018_age matches seqid_dot columns exactly", {
+  prots <- tanaka2018_proteins()
+  demo <- data.frame(
+    SampleID = paste0("S", 1:4),
+    Age = c(40, 50, 60, 70),
+    stringsAsFactors = FALSE
+  )
+  for (sid in paste0("seq.", prots$seqid_dot)) {
+    demo[[sid]] <- 10
+  }
+
+  result <- compute_tanaka2018_age(
+    demo, id_col = "SampleID", age_col = "Age", match_by = "seqid_dot"
+  )
+
+  expect_equal(result$n_proteins_matched, rep(76, 4))
+  expect_equal(result$n_proteins_missing, rep(0, 4))
 })
 
 test_that("compute_tanaka2018_age warns on missing proteins", {
