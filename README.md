@@ -107,8 +107,11 @@ pac$group_comparison
 
 ## AIFI Olink Demo
 
-This example starts from the Allen Institute AIFI long-format Olink file,
-converts it to a UniProt wide table, and computes PAC age with sex-based plots.
+Download the Allen Institute AIFI long-format Olink file from:
+https://apps.allenimmunology.org/aifi/insights/dynamics-imm-health-age/downloads/olink/
+
+The example below converts that file to a UniProt wide table and computes PAC
+age with sex-based plots.
 
 ```r
 library(proteomicAge)
@@ -116,7 +119,7 @@ library(dplyr)
 library(tidyr)
 
 immune_olink <- read.csv(
-  "C:/Users/DELL/Downloads/imm-of-aging_all_olink.csv",
+  "path/to/imm-of-aging_all_olink.csv",
   check.names = FALSE
 )
 
