@@ -22,7 +22,7 @@ compute_kuo2024_pac_age(
 \item{match_by}{Protein column naming convention: "gene" or "uniprot".}
 
 \item{protein_map}{Optional data.frame mapping gene/assay names to UniProt
-IDs. Required when `match_by = "uniprot"`.}
+IDs. If NULL, the built-in Olink map is used.}
 }
 \value{
 data.frame with PAC proteomic age and age acceleration.

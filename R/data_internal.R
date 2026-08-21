@@ -7,6 +7,7 @@
 .wang2024_aric_cache      <- new.env(parent = emptyenv())
 .kuo2024_pac_cache        <- new.env(parent = emptyenv())
 .goeminne2025_cache       <- new.env(parent = emptyenv())
+.olink_map_cache          <- new.env(parent = emptyenv())
 
 load_tanaka2018_coefs <- function() {
   if (is.null(.tanaka2018_cache$coefs)) {
@@ -184,6 +185,15 @@ load_goeminne2025_coefs <- function() {
     .goeminne2025_cache$coefs <- coefs
     .goeminne2025_cache$organs <- sort(unique(coefs$organ))
     .goeminne2025_cache$proteins <- sort(unique(coefs$protein[coefs$protein != "Intercept"]))
+  }
+  invisible()
+}
+
+load_olink_protein_map <- function() {
+  if (is.null(.olink_map_cache$map)) {
+    path <- system.file("extdata", "olink_protein_map.csv",
+                        package = "proteomicAge", mustWork = TRUE)
+    .olink_map_cache$map <- utils::read.csv(path, stringsAsFactors = FALSE)
   }
   invisible()
 }

@@ -25,7 +25,7 @@ kuo2024_pac_proteins <- function() {
 #' @param age_col Chronological age column name.
 #' @param match_by Protein column naming convention: "gene" or "uniprot".
 #' @param protein_map Optional data.frame mapping gene/assay names to UniProt
-#'   IDs. Required when `match_by = "uniprot"`.
+#'   IDs. If NULL, the built-in Olink map is used.
 #' @return data.frame with PAC proteomic age and age acceleration.
 #' @export
 compute_kuo2024_pac_age <- function(data,

@@ -31,7 +31,7 @@ compute_goeminne2025_organ_age(
 \item{match_by}{Protein column naming convention: "gene" or "uniprot".}
 
 \item{protein_map}{Optional data.frame mapping gene/assay names to UniProt
-IDs. Required when `match_by = "uniprot"`.}
+IDs. If NULL, the built-in Olink map is used.}
 }
 \value{
 Long data.frame with one row per sample and organ.

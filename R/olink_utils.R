@@ -13,7 +13,8 @@
 .olink_match_lookup <- function(columns, proteins, match_by, protein_map = NULL) {
   if (match_by == "gene") return(.olink_gene_lookup(columns, proteins))
   if (is.null(protein_map)) {
-    stop("protein_map is required when match_by = 'uniprot'")
+    load_olink_protein_map()
+    protein_map <- .olink_map_cache$map
   }
 
   map <- .olink_standardize_map(protein_map)
@@ -42,12 +43,23 @@
   out[!duplicated(paste(toupper(out$gene), toupper(out$uniprot))), ]
 }
 
+#' List built-in Olink gene-UniProt mappings
+#'
+#' @return data.frame with Olink assay/gene names, UniProt accessions, assay IDs,
+#'   panels, and source.
+#' @export
+olink_protein_map <- function() {
+  load_olink_protein_map()
+  .olink_map_cache$map
+}
+
 #' Build an Olink gene-UniProt map from long-format Olink data
 #'
 #' @param data Long-format Olink data frame.
 #' @param gene_col Column containing Olink assay or gene names.
 #' @param uniprot_col Column containing UniProt accessions.
-#' @return data.frame with gene and uniprot columns.
+#' @return data.frame with gene and uniprot columns. This is optional; Olink
+#'   clock functions use a built-in Olink map when `match_by = "uniprot"`.
 #' @export
 olink_protein_map_from_long <- function(data,
                                         gene_col = "olink.assay",

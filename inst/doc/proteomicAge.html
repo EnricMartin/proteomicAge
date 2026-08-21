@@ -162,16 +162,14 @@ wang_age &lt;- compute_wang2024_aric_age(
   organs = &quot;Conventional&quot;,
   model_type = &quot;mortality&quot;
 )</code></pre>
-<p>If an Olink matrix uses UniProt IDs as protein column names, build a map from</p>
-<p>the original long Olink table and pass it to the Olink clock functions:</p>
-<pre><code>protein_map &lt;- olink_protein_map_from_long(olink_long)
-
-pac_age &lt;- compute_kuo2024_pac_age(
+<p>If an Olink matrix uses UniProt IDs as protein column names, set</p>
+<p><code>match_by = &quot;uniprot&quot;</code>. The package includes an Olink gene-UniProt map covering</p>
+<p>the built-in PAC and Goeminne models:</p>
+<pre><code>pac_age &lt;- compute_kuo2024_pac_age(
   olink_wide_uniprot,
   id_col = &quot;SampleID&quot;,
   age_col = &quot;Age&quot;,
-  match_by = &quot;uniprot&quot;,
-  protein_map = protein_map
+  match_by = &quot;uniprot&quot;
 )
 
 goeminne_heart &lt;- compute_goeminne2025_organ_age(
@@ -179,9 +177,10 @@ goeminne_heart &lt;- compute_goeminne2025_organ_age(
   id_col = &quot;SampleID&quot;,
   age_col = &quot;Age&quot;,
   organs = &quot;Heart&quot;,
-  match_by = &quot;uniprot&quot;,
-  protein_map = protein_map
+  match_by = &quot;uniprot&quot;
 )</code></pre>
+<p>For custom Olink panels, <code>protein_map</code> can still be supplied manually or built</p>
+<p>from a long-format Olink table with <code>olink_protein_map_from_long()</code>.</p>
 <h1>Clock protein lists</h1>
 <p>Each clock has a helper that returns the model proteins.</p>
 <pre><code>nrow(tanaka2018_proteins())

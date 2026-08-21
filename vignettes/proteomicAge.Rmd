@@ -250,18 +250,16 @@ goeminne_mortality <- compute_goeminne2025_organ_age(
 )
 ```
 
-If an Olink matrix uses UniProt IDs as protein column names, build a map from
-the original long Olink table and pass it to the Olink clock functions:
+If an Olink matrix uses UniProt IDs as protein column names, set
+`match_by = "uniprot"`. The package includes an Olink gene-UniProt map covering
+the built-in PAC and Goeminne models:
 
 ```r
-protein_map <- olink_protein_map_from_long(olink_long)
-
 pac_age <- compute_kuo2024_pac_age(
   olink_wide_uniprot,
   id_col = "SampleID",
   age_col = "Age",
-  match_by = "uniprot",
-  protein_map = protein_map
+  match_by = "uniprot"
 )
 
 goeminne_heart <- compute_goeminne2025_organ_age(
@@ -269,10 +267,12 @@ goeminne_heart <- compute_goeminne2025_organ_age(
   id_col = "SampleID",
   age_col = "Age",
   organs = "Heart",
-  match_by = "uniprot",
-  protein_map = protein_map
+  match_by = "uniprot"
 )
 ```
+
+For custom Olink panels, `protein_map` can still be supplied manually or built
+from a long-format Olink table with `olink_protein_map_from_long()`.
 
 # Clock protein lists
 

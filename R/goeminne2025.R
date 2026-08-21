@@ -26,7 +26,7 @@ goeminne2025_organaging_proteins <- function() {
 #' @param fold Model fold to use; defaults to 1, as suggested by authors.
 #' @param match_by Protein column naming convention: "gene" or "uniprot".
 #' @param protein_map Optional data.frame mapping gene/assay names to UniProt
-#'   IDs. Required when `match_by = "uniprot"`.
+#'   IDs. If NULL, the built-in Olink map is used.
 #' @return Long data.frame with one row per sample and organ.
 #' @export
 compute_goeminne2025_organ_age <- function(data,

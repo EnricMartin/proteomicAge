@@ -18,7 +18,8 @@ olink_protein_map_from_long(
 \item{uniprot_col}{Column containing UniProt accessions.}
 }
 \value{
-data.frame with gene and uniprot columns.
+data.frame with gene and uniprot columns. This is optional; Olink
+  clock functions use a built-in Olink map when `match_by = "uniprot"`.
 }
 \description{
 Build an Olink gene-UniProt map from long-format Olink data
