@@ -169,9 +169,6 @@ goeminne_brain$group_plot
 goeminne_brain$group_comparison
 ```
 
-In this demo data, the Brain model matches 112 proteins and treats 6 all-missing
-Brain-model proteins as unavailable.
-
 <table>
   <tr>
     <td><img src="man/figures/aifi-goeminne-brain-scatter.png" alt="Goeminne Brain age scatter plot"></td>
