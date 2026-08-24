@@ -3,6 +3,8 @@
 Compute biological age from plasma proteomic data using published proteomic
 aging clocks, including the **Global proteomic age ensemble**.
 
+![proteomicAge workflow](man/figures/proteomic-clock-workflow.png)
+
 **Contributed by:** Han Xiao (hx624@ic.ac.uk), Esther Herrera.
 
 ## Installation
