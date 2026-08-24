@@ -116,8 +116,8 @@ pac$group_comparison
 Download the Allen Institute AIFI long-format Olink file from:
 https://apps.allenimmunology.org/aifi/insights/dynamics-imm-health-age/downloads/olink/
 
-The example below converts that file to a UniProt wide table and computes PAC
-age with sex-based plots.
+The example below converts that file to a UniProt wide table and computes the
+Goeminne second-generation Olink Brain age with sex-based plots.
 
 ```r
 library(proteomicAge)
@@ -139,22 +139,45 @@ olink_wide_uniprot <- immune_olink %>%
   ) %>%
   filter(!is.na(uniprot), uniprot != "") %>%
   group_by(SampleID, Age, Sex, uniprot) %>%
-  summarise(value = mean(npx_raw, na.rm = TRUE), .groups = "drop") %>%
+  summarise(
+    value = if (all(is.na(npx_raw))) NA_real_ else mean(npx_raw, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
   pivot_wider(names_from = uniprot, values_from = value)
 
-pac <- compute_kuo2024_pac_age(
+protein_cols <- setdiff(names(olink_wide_uniprot), c("SampleID", "Age", "Sex"))
+olink_wide_uniprot <- olink_wide_uniprot[, c(
+  "SampleID", "Age", "Sex",
+  protein_cols[colSums(!is.na(olink_wide_uniprot[protein_cols])) > 0]
+)]
+
+goeminne_brain <- compute_goeminne2025_organ_age(
   olink_wide_uniprot,
   id_col = "SampleID",
   age_col = "Age",
+  organs = "Brain",
+  model_type = "chronological",
+  fold = 1,
+  match_by = "uniprot",
   group = "Sex"
 )
 
-head(pac$predictions)
-pac$qc
-pac$scatter_plot
-pac$group_plot
-pac$group_comparison
+head(goeminne_brain$predictions)
+goeminne_brain$qc
+goeminne_brain$scatter_plot
+goeminne_brain$group_plot
+goeminne_brain$group_comparison
 ```
+
+In this demo data, the Brain model matches 112 proteins and treats 6 all-missing
+Brain-model proteins as unavailable.
+
+<table>
+  <tr>
+    <td><img src="man/figures/aifi-goeminne-brain-scatter.png" alt="Goeminne Brain age scatter plot"></td>
+    <td><img src="man/figures/aifi-goeminne-brain-sex-violin.png" alt="Goeminne Brain age acceleration by sex"></td>
+  </tr>
+</table>
 
 ## Output
 
